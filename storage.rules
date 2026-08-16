@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Business imagery is public (it renders on statically generated pages).
+// Uploads are limited to the owning business, by the same custom claim
+// Firestore uses.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function ownsBusiness(businessId) {
+      return request.auth != null
+        && 'businessId' in request.auth.token
+        && request.auth.token.businessId == businessId;
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && 'roles' in request.auth.token
+        && request.auth.token.roles is list
+        && request.auth.token.roles.hasAny(['admin']);
+    }
+
+    function isImageUnder(megabytes) {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < megabytes * 1024 * 1024;
+    }
+
+    match /businesses/{businessId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isAdmin() || ownsBusiness(businessId)) && isImageUnder(8);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

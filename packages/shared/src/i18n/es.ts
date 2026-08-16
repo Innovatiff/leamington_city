@@ -1,0 +1,117 @@
+import type { Messages } from './en.js';
+
+/**
+ * Spanish catalogue. Typed as `Messages`, so a key added to `en.ts` and not
+ * translated here fails the build.
+ *
+ * Register: Latin American Spanish, `usted` for owner-facing copy, `tú` avoided
+ * throughout. Leamington's Spanish-speaking population is largely Mexican and
+ * Central American, so `es-419` rather than `es-ES` vocabulary.
+ */
+export const es: Messages = {
+  'nav.feed': 'Hoy',
+  'nav.directory': 'Negocios',
+  'nav.offers': 'Ofertas',
+  'nav.jobs': 'Empleos',
+  'nav.saved': 'Guardados',
+  'nav.menu': 'Menú',
+
+  'common.loading': 'Cargando…',
+  'common.retry': 'Intentar de nuevo',
+  'common.error': 'Algo salió mal.',
+  'common.offline': 'Está sin conexión. Mostrando lo guardado.',
+  'common.empty': 'Todavía no hay nada aquí.',
+  'common.more': 'Ver más',
+  'common.back': 'Atrás',
+  'common.close': 'Cerrar',
+  'common.search': 'Buscar',
+  'common.searchPlaceholder': 'Buscar negocios en Leamington',
+  'common.languageName': 'Español',
+  'common.switchLanguage': 'English',
+
+  'feed.title': 'Hoy en Leamington',
+  'feed.subtitle': 'Ofertas y empleos de negocios locales.',
+  'feed.empty': 'Hoy no hay ofertas. Vuelva mañana.',
+  'feed.endsToday': 'Termina hoy',
+  'feed.endsOn': 'Termina el {date}',
+
+  'business.hours': 'Horario',
+  'business.openNow': 'Abierto ahora',
+  'business.closedNow': 'Cerrado',
+  'business.closedToday': 'Cerrado hoy',
+  'business.call': 'Llamar',
+  'business.directions': 'Cómo llegar',
+  'business.visitWebsite': 'Visitar el sitio web',
+  'business.orderOnWebsite': 'Ordenar en su sitio web',
+  'business.noWebsite': 'No hay sitio web',
+  'business.claimThis': '¿Este es su negocio?',
+  'business.claimCta': 'Reclamar este perfil',
+  'business.offersCount': '{count} ofertas',
+  'business.jobsCount': '{count} empleos',
+  'business.unclaimedNote': 'Este perfil se agregó desde un directorio público.',
+
+  'offer.title': 'Ofertas',
+  'offer.percentOff': '{percent}% de descuento',
+  'offer.amountOff': '{amount} de descuento',
+  'offer.bogo': 'Compre uno y llévese otro',
+  'offer.freebie': 'Artículo gratis',
+  'offer.terms': 'Condiciones',
+  'offer.inStore': 'En el local',
+  'offer.online': 'En línea',
+  'offer.getCode': 'Obtener mi código',
+  'offer.yourCode': 'Su código',
+  'offer.codeExpires': 'Vence en {minutes} minutos',
+  'offer.showStaff': 'Muestre esto al personal.',
+  'offer.limitReached': 'Esta oferta ya se agotó.',
+  'offer.alreadyClaimed': 'Ya reclamó esta oferta.',
+  'offer.expired': 'Esta oferta ya terminó.',
+
+  'job.title': 'Empleos',
+  'job.apply': 'Postularse',
+  'job.postedOn': 'Publicado el {date}',
+  'job.fullTime': 'Tiempo completo',
+  'job.partTime': 'Medio tiempo',
+  'job.seasonal': 'Temporal por temporada',
+  'job.contract': 'Por contrato',
+  'job.temporary': 'Temporal',
+  'job.onsite': 'Presencial',
+  'job.hybrid': 'Híbrido',
+  'job.remote': 'Remoto',
+  'job.perHour': 'por hora',
+  'job.perYear': 'por año',
+
+  'auth.signIn': 'Iniciar sesión',
+  'auth.signOut': 'Cerrar sesión',
+  'auth.emailLabel': 'Correo electrónico',
+  'auth.sendLink': 'Envíenme un enlace de acceso',
+  'auth.linkSent': 'Revise su correo para encontrar el enlace.',
+  'auth.notAuthorized': 'Esta cuenta no puede administrar ese negocio.',
+
+  'portal.title': 'Mi negocio',
+  'portal.overview': 'Resumen',
+  'portal.editBusiness': 'Editar mis datos',
+  'portal.myOffers': 'Mis ofertas',
+  'portal.myJobs': 'Mis empleos',
+  'portal.newOffer': 'Agregar una oferta',
+  'portal.newJob': 'Publicar un empleo',
+  'portal.save': 'Guardar',
+  'portal.saved': 'Guardado.',
+  'portal.saveFailed': 'No se pudo guardar. Intente de nuevo.',
+  'portal.publish': 'Publicar',
+  'portal.unpublish': 'Ocultar',
+  'portal.draftNotice': 'Esto es un borrador. Nadie puede verlo todavía.',
+  'portal.helpWebsite': 'Quien toque esto irá directo a su propio sitio web.',
+  'portal.helpBilingual':
+    'Los clientes ven los dos idiomas. Nosotros podemos traducirlo por usted.',
+
+  'admin.title': 'Administración',
+  'admin.businesses': 'Negocios',
+  'admin.claims': 'Solicitudes de reclamo',
+  'admin.feed': 'Portada',
+  'admin.rebuildFeed': 'Regenerar la portada de hoy',
+  'admin.approve': 'Aprobar',
+  'admin.reject': 'Rechazar',
+
+  'push.dailyTitle': 'Hoy en Leamington',
+  'push.dailyBody': '{count} ofertas nuevas cerca de usted.',
+};

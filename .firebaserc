@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "leamington-city"
+  },
+  "targets": {
+    "leamington-city": {
+      "hosting": {
+        "app": ["leamington-city"],
+        "portal": ["leamington-city-portal"],
+        "admin": ["leamington-city-admin"]
+      }
+    }
+  }
+}

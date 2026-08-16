@@ -1,0 +1,161 @@
+rules_version = '2';
+
+// Firestore security rules. Mirrors SCHEMA.md.
+//
+// Cloud Functions use the Admin SDK, which bypasses these rules entirely.
+// So "functions only" is expressed here as "no client may write" — there is no
+// service-account condition to write, and adding one would be a lie.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function claims() {
+      return request.auth.token;
+    }
+
+    // The custom claim minted by functions/src/claims.ts when a claim request
+    // is approved. A user manages exactly one business.
+    function ownsBusiness(businessId) {
+      return isSignedIn()
+        && 'businessId' in claims()
+        && claims().businessId == businessId;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && 'roles' in claims()
+        && claims().roles is list
+        && claims().roles.hasAny(['admin']);
+    }
+
+    // Fields only functions or admins may move: tier and rank are billing
+    // outputs, counts are maintained by triggers, slug is a permanent URL.
+    function changedFields() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function touchesOnly(allowed) {
+      return changedFields().hasOnly(allowed);
+    }
+
+    // ------------------------------------------------------------- businesses
+
+    match /businesses/{businessId} {
+      // Public directory. Static generation and anonymous phones both read this.
+      allow read: if true;
+
+      // Creation and deletion are seed/admin operations, never a client's.
+      allow create, delete: if isAdmin();
+
+      // A business document is writable only by a user whose custom claim
+      // businessId matches this document, and only for owner-editable fields.
+      allow update: if isAdmin()
+        || (ownsBusiness(businessId) && touchesOnly([
+             'name', 'shortDescription', 'description', 'address', 'geo',
+             'phone', 'email', 'websiteUrl', 'socials', 'hours',
+             'logoUrl', 'heroUrl', 'photos', 'tags', 'category', 'categories',
+             'sortName', 'status', 'updatedAt'
+           ]));
+    }
+
+    // ------------------------------------------------------------------ offers
+
+    match /offers/{offerId} {
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (ownsBusiness(request.resource.data.businessId)
+            // The counter starts at zero; only functions may move it.
+            && request.resource.data.redemptionCount == 0);
+
+      allow update: if isAdmin()
+        || (ownsBusiness(resource.data.businessId)
+            // businessId is immutable: an offer cannot be reparented.
+            && request.resource.data.businessId == resource.data.businessId
+            && !changedFields().hasAny(['redemptionCount']));
+
+      allow delete: if isAdmin() || ownsBusiness(resource.data.businessId);
+    }
+
+    // -------------------------------------------------------------------- jobs
+
+    match /jobs/{jobId} {
+      allow read: if true;
+
+      allow create: if isAdmin() || ownsBusiness(request.resource.data.businessId);
+
+      allow update: if isAdmin()
+        || (ownsBusiness(resource.data.businessId)
+            && request.resource.data.businessId == resource.data.businessId);
+
+      allow delete: if isAdmin() || ownsBusiness(resource.data.businessId);
+    }
+
+    // ---------------------------------------------------------------- feedDays
+
+    match /feedDays/{dayKey} {
+      // Public read: this single document is the whole feed.
+      allow read: if true;
+      // Written by the scheduled feed builder only.
+      allow write: if false;
+    }
+
+    // --------------------------------------------------------------- clickouts
+
+    // Write-only analytics, and not even that from a client: clients call the
+    // recordClickout callable, which writes via the Admin SDK and returns the
+    // destination. Nothing here is client-readable.
+    match /clickouts/{clickoutId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------- redemptions
+
+    // Issued transactionally by the issueRedemption callable — a client cannot
+    // mint a code or move the offer's counter. A user may read their own.
+    match /redemptions/{redemptionId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid)
+        || ownsBusiness(resource.data.businessId);
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------ subscriptions
+
+    // Billing state. Owners read it to render the portal; every mutation
+    // arrives from a provider webhook via the Admin SDK.
+    match /subscriptions/{businessId} {
+      allow read: if isAdmin() || ownsBusiness(businessId);
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------------- users
+
+    match /users/{uid} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        // roles and businessId are mirrors of custom claims; a user setting
+        // their own would not grant anything, but let's not store a lie.
+        && !request.resource.data.keys().hasAny(['roles', 'businessId']);
+
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && touchesOnly(['locale', 'push', 'savedBusinessIds', 'updatedAt']);
+
+      allow delete: if false;
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

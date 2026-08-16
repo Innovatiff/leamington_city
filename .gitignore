@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.astro/
+.output/
+.vite/
+*.tsbuildinfo
+
+# secrets / local config
+.env
+.env.*
+!.env.example
+service-account*.json
+*-service-account.json
+
+# firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+emulator-data/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
