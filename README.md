@@ -63,6 +63,45 @@ translated; only their display names are.
 there for a crawler. The category pages are the indexable surface, and each one
 is fully server-rendered with `ItemList` JSON-LD.
 
+### Design and imagery
+
+Navigation is at the top on every breakpoint — there is no bottom tab bar. On a
+phone the header carries the brand, search and language switch on one row and
+the section links on a second.
+
+`packages/shared/src/i18n` is still the only source of user-facing strings; the
+design layer adds no hard-coded copy.
+
+Every business needs a picture, and most imported listings will never have one,
+so `apps/app/src/lib/covers.ts` falls back to a generated category scene chosen
+deterministically from the slug — the same business keeps the same picture
+across builds. Real photography always wins: set `heroUrl` or `photos` on a
+business and the generated cover is no longer used.
+
+The covers themselves are built by `scripts/generate-imagery.mjs`, which
+rasterises layered SVG scenes through Chromium into
+`apps/app/public/img/covers/`. Each category has three visually distinct
+compositions so a category page never shows the same picture four times.
+Regenerate with:
+
+```bash
+node scripts/generate-imagery.mjs     # needs playwright available
+```
+
+They are committed, so a normal build does not need to run it.
+
+### Filling the directory for development
+
+```bash
+pnpm seed -- --file scripts/data/leamington-businesses.sample.csv --emulator --commit
+pnpm seed:demo -- --emulator --commit
+```
+
+The sample CSV carries 30 Leamington businesses with hours, coordinates and
+bilingual copy; `seed:demo` adds 16 offers and 10 jobs on top. `seed:demo` is a
+development tool — it never touches a business an owner has claimed, and it is
+not part of the production import path.
+
 ### Search and the Open Now filter
 
 `/search-index.json` is generated at build time from Firestore and is the only

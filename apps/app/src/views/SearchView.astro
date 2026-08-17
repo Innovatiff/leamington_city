@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 import SearchIsland from '../components/SearchIsland';
-import { translate, type Locale, type MessageKey } from '@leamington/shared';
+import { localizedPath, translate, type Locale, type MessageKey } from '@leamington/shared';
+import { getBusinesses } from '../lib/content';
 import { ROUTES } from '../lib/routes';
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = (key: MessageKey) => translate(locale, key);
+const businesses = await getBusinesses();
+const categories = [...new Set(businesses.map((business) => business.category))];
 
 // Results are built client-side from the static index, so there is nothing
 // server-rendered here for a crawler to index. The category pages are the
@@ -21,15 +24,20 @@ const t = (key: MessageKey) => translate(locale, key);
   path={ROUTES.search}
   title={`${t('search.title')} · Leamington`}
   description={t('search.placeholder')}
+  footerCategories={categories}
   noindex={true}
 >
-  <h1 class="text-2xl font-bold text-neutral-900">{t('search.title')}</h1>
+  <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+    {t('search.title')}
+  </h1>
 
   {/* client:load: someone who navigated to /search is about to type. */}
   <SearchIsland client:load locale={locale} indexUrl={ROUTES.searchIndex} />
 
   <noscript>
-    <p class="mt-4 text-neutral-700">{t('search.startTyping')}</p>
-    <a href={ROUTES.directory} class="btn-secondary mt-3 w-full">{t('nav.directory')}</a>
+    <p class="mt-4 text-ink-700">{t('search.startTyping')}</p>
+    <a href={localizedPath(locale, ROUTES.directory)} class="btn-secondary mt-3">
+      {t('nav.directory')}
+    </a>
   </noscript>
 </Base>

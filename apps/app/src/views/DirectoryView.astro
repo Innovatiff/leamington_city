@@ -2,10 +2,13 @@
 import Base from '../layouts/Base.astro';
 import BusinessCard from '../components/BusinessCard.astro';
 import OpenNowFilter from '../components/OpenNowFilter';
+import SectionHeader from '../components/SectionHeader.astro';
 import {
   BUSINESS_CATEGORIES,
   categoryMessageKey,
+  localizedPath,
   translate,
+  translateCount,
   type Locale,
   type MessageKey,
 } from '@leamington/shared';
@@ -23,59 +26,76 @@ const t = (key: MessageKey, params?: Record<string, string | number>) =>
 const grouped = await getBusinessesByCategory();
 // Enum order, not alphabetical — it groups eating, shopping and services
 // together, which is how someone scans a directory.
-const present = BUSINESS_CATEGORIES.filter((category) => (grouped.get(category) ?? []).length > 0);
+const present = BUSINESS_CATEGORIES.filter(
+  (category) => (grouped.get(category) ?? []).length > 0,
+);
 const total = [...grouped.values()].reduce((sum, list) => sum + list.length, 0);
 
 /** Only the first few per category; the category page has the rest. */
-const PREVIEW = 5;
+const PREVIEW = 3;
 ---
 
 <Base
   locale={locale}
   path={ROUTES.directory}
   title={`${t('nav.directory')} · Leamington`}
-  description={t('feed.subtitle')}
+  description={t('footer.tagline')}
+  footerCategories={present}
 >
-  <h1 class="text-2xl font-bold text-neutral-900">{t('nav.directory')}</h1>
-  <p class="mt-1 text-sm text-neutral-600">
-    {t('search.resultCount', { count: total })}
-  </p>
+  <header>
+    <p class="eyebrow">Leamington, Ontario</p>
+    <h1 class="mt-1 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+      {t('nav.directory')}
+    </h1>
+    <p class="mt-2 max-w-xl text-ink-600">{t('footer.tagline')}</p>
+    <p class="mt-1 text-sm font-semibold text-ink-500">
+      {translateCount(locale, 'category.countOne', 'category.count', total)}
+    </p>
+  </header>
 
-  <div class="mt-3">
+  {/* Jump links: thirty listings is a long scroll on a phone. */}
+  <nav class="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1" aria-label={t('footer.categories')}>
+    {
+      present.map((category) => (
+        <a href={categoryPath(category, locale)} class="chip">
+          {t(categoryMessageKey(category))}
+          <span class="text-ink-400">{(grouped.get(category) ?? []).length}</span>
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="mt-5">
     <OpenNowFilter client:visible locale={locale} />
   </div>
 
-  {total === 0 && <p class="mt-8 text-neutral-600">{t('common.empty')}</p>}
+  {total === 0 && <p class="py-16 text-center text-ink-600">{t('common.empty')}</p>}
 
   {
     present.map((category) => {
       const businesses = grouped.get(category) ?? [];
       const categoryName = t(categoryMessageKey(category));
       return (
-        <section class="mt-6">
-          <div class="flex items-baseline justify-between gap-2">
-            <h2 class="text-sm font-bold uppercase tracking-wide text-neutral-500">
-              {categoryName}
-            </h2>
-            <a href={categoryPath(category, locale)} class="text-sm text-brand-600 underline">
-              {t('common.more')}
-            </a>
-          </div>
-          <ul class="mt-2 space-y-2">
-            {businesses.slice(0, PREVIEW).map((business) => (
-              <BusinessCard business={business} locale={locale} />
+        <section class="mt-10">
+          <SectionHeader
+            title={categoryName}
+            subtitle={translateCount(locale, 'category.countOne', 'category.count', businesses.length)}
+            href={categoryPath(category, locale)}
+            linkLabel={t('home.viewAll')}
+          />
+          <ul class="stagger mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {businesses.slice(0, PREVIEW).map((business, index) => (
+              <BusinessCard business={business} locale={locale} index={index} />
             ))}
           </ul>
-          {businesses.length > PREVIEW && (
-            <a
-              href={categoryPath(category, locale)}
-              class="mt-2 block text-sm text-brand-600 underline"
-            >
-              {t('search.resultCount', { count: businesses.length })}
-            </a>
-          )}
         </section>
       );
     })
   }
+
+  <p class="mt-12 text-center text-sm text-ink-500">
+    <a href={localizedPath(locale, ROUTES.search)} class="font-semibold text-brand-700 hover:underline">
+      {t('home.searchCta')} →
+    </a>
+  </p>
 </Base>

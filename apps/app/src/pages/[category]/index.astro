@@ -9,18 +9,25 @@ import { getBusinessesByCategory } from '../../lib/content';
  */
 export async function getStaticPaths() {
   const grouped = await getBusinessesByCategory();
-  return [...grouped.entries()]
-    .filter(([, businesses]) => businesses.length > 0)
-    .map(([category, businesses]) => ({
-      params: { category: categorySlug(category) },
-      props: { category, businesses },
-    }));
+  const populated = [...grouped.entries()].filter(([, list]) => list.length > 0);
+  const siblings = populated.map(([category]) => category);
+
+  return populated.map(([category, businesses]) => ({
+    params: { category: categorySlug(category) },
+    props: { category, businesses, siblings },
+  }));
 }
 
-const { category, businesses } = Astro.props as {
+const { category, businesses, siblings } = Astro.props as {
   category: BusinessCategory;
   businesses: Business[];
+  siblings: BusinessCategory[];
 };
 ---
 
-<CategoryView locale="en" category={category} businesses={businesses} />
+<CategoryView
+  locale="en"
+  category={category}
+  businesses={businesses}
+  siblings={siblings}
+/>

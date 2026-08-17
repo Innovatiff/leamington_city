@@ -1,44 +1,147 @@
 @import 'tailwindcss';
 
 /*
- * Mobile-first: everything below assumes a 5-inch phone on a bad connection.
- * No web fonts — system stack only, so first paint costs zero extra requests.
+ * Design system.
+ *
+ * Mobile-first, on a 5-inch phone, often outdoors, often on a bad connection.
+ * Three rules the rest of this file follows:
+ *
+ *   1. No web fonts. First paint costs zero extra requests, and the system
+ *      stack is what the phone renders fastest.
+ *   2. Motion is decoration. Everything animated here is also correct with
+ *      animation disabled, and `prefers-reduced-motion` turns it all off.
+ *   3. Colour carries meaning: brand red is for actions, leaf green means
+ *      "open right now", and neutrals do everything else.
  */
+
 @theme {
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
 
-  /* Greenhouse country: tomato red against a deep leaf green. */
-  --color-brand-50: oklch(0.97 0.02 25);
-  --color-brand-100: oklch(0.93 0.05 25);
-  --color-brand-500: oklch(0.62 0.19 25);
-  --color-brand-600: oklch(0.55 0.19 25);
-  --color-brand-700: oklch(0.47 0.16 25);
+  /* Greenhouse country: tomato red against deep leaf green. */
+  --color-brand-50: oklch(0.972 0.017 27);
+  --color-brand-100: oklch(0.936 0.04 27);
+  --color-brand-200: oklch(0.876 0.079 27);
+  --color-brand-300: oklch(0.795 0.124 27);
+  --color-brand-400: oklch(0.702 0.168 27);
+  --color-brand-500: oklch(0.623 0.194 27);
+  --color-brand-600: oklch(0.552 0.192 27);
+  --color-brand-700: oklch(0.468 0.166 27);
+  --color-brand-800: oklch(0.394 0.135 27);
+  --color-brand-900: oklch(0.334 0.109 27);
 
-  --color-leaf-500: oklch(0.55 0.12 150);
-  --color-leaf-700: oklch(0.42 0.1 150);
+  --color-leaf-50: oklch(0.965 0.035 150);
+  --color-leaf-100: oklch(0.925 0.07 150);
+  --color-leaf-500: oklch(0.63 0.145 150);
+  --color-leaf-600: oklch(0.552 0.132 150);
+  --color-leaf-700: oklch(0.462 0.11 150);
+
+  /* Warm ink — pure grey looks clinical next to the tomato red. */
+  --color-ink-50: oklch(0.985 0.003 60);
+  --color-ink-100: oklch(0.968 0.005 60);
+  --color-ink-200: oklch(0.925 0.007 60);
+  --color-ink-300: oklch(0.863 0.009 60);
+  --color-ink-400: oklch(0.708 0.011 60);
+  --color-ink-500: oklch(0.565 0.012 60);
+  --color-ink-600: oklch(0.452 0.012 60);
+  --color-ink-700: oklch(0.375 0.011 60);
+  --color-ink-800: oklch(0.276 0.009 60);
+  --color-ink-900: oklch(0.208 0.008 60);
+  --color-ink-950: oklch(0.148 0.007 60);
+
+  --radius-card: 1rem;
+
+  /* Two shadows only. More than that and nothing reads as elevated. */
+  --shadow-soft: 0 1px 2px oklch(0.2 0.01 60 / 0.05), 0 4px 16px oklch(0.2 0.01 60 / 0.06);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.01 60 / 0.06), 0 12px 32px oklch(0.2 0.01 60 / 0.12);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-rise: rise 0.5s var(--ease-out-soft) both;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--color-leaf-500);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+    opacity: 0.85;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -140% 0;
+  }
+  to {
+    background-position: 240% 0;
+  }
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    /* Sticky header height, so in-page anchors do not land under it. */
+    scroll-padding-top: 5rem;
   }
 
   body {
-    @apply bg-white text-neutral-900 antialiased;
+    @apply bg-white text-ink-900 antialiased;
     font-family: var(--font-sans);
+    /* Stops the rubber-band overscroll revealing white above a dark hero. */
+    overscroll-behavior-y: none;
   }
 
-  /* Tap targets never smaller than 44px — this is used one-handed, outdoors. */
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    @apply text-pretty;
+  }
+
+  /* Tap targets never smaller than 44px — used one-handed, outdoors. */
   a,
   button {
-    @apply min-h-[44px] items-center;
+    @apply items-center;
   }
 
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-600;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    @apply bg-brand-100 text-brand-900;
+  }
+
+  /* Hide the scrollbar on horizontal rails without disabling scrolling. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -49,23 +152,181 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
 
 @layer components {
+  /* ---------------------------------------------------------------- surfaces */
+
   .card {
-    @apply block rounded-xl border border-neutral-200 bg-white p-4 shadow-sm;
+    @apply relative block overflow-hidden rounded-[--radius-card] border border-ink-200/70
+      bg-white shadow-[--shadow-soft] transition duration-300
+      ease-[--ease-out-soft];
   }
 
+  /* Lift only where a pointer exists — on a phone this would fire on tap and
+     leave the card stuck in its hover state. */
+  @media (hover: hover) {
+    .card-interactive:hover {
+      @apply -translate-y-0.5 border-ink-300 shadow-[--shadow-lift];
+    }
+    .card-interactive:hover .card-zoom {
+      transform: scale(1.045);
+    }
+  }
+
+  .card-interactive:active {
+    @apply translate-y-0 shadow-[--shadow-soft];
+  }
+
+  .card-zoom {
+    @apply transition-transform duration-500 ease-[--ease-out-soft];
+  }
+
+  /* ----------------------------------------------------------------- buttons */
+
   .btn-primary {
-    @apply inline-flex justify-center rounded-lg bg-brand-600 px-4 py-3 text-base
-      font-semibold text-white active:bg-brand-700;
+    @apply btn bg-brand-600 text-white shadow-[--shadow-soft]
+      hover:bg-brand-700 hover:shadow-[--shadow-lift];
   }
 
   .btn-secondary {
-    @apply inline-flex justify-center rounded-lg border border-neutral-300 px-4 py-3
-      text-base font-semibold text-neutral-800 active:bg-neutral-100;
+    @apply btn border border-ink-300 bg-white text-ink-800 hover:border-ink-400 hover:bg-ink-50;
   }
+
+  .btn-ghost {
+    @apply btn text-ink-700 hover:bg-ink-100;
+  }
+
+  .btn-lg {
+    @apply min-h-13 rounded-2xl px-6 text-base;
+  }
+
+  /* -------------------------------------------------------------------- chips */
+
+  .chip {
+    @apply inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border
+      border-ink-200 bg-white px-3 text-[13px] font-semibold text-ink-700
+      transition duration-200 hover:border-ink-300 hover:bg-ink-50;
+  }
+
+  .chip-active {
+    @apply border-brand-600 bg-brand-600 text-white hover:border-brand-700 hover:bg-brand-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]
+      font-bold uppercase tracking-wide;
+  }
+
+  /* --------------------------------------------------------------- open state */
+
+  .dot-open {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full bg-leaf-500;
+    animation: var(--animate-pulse-dot);
+  }
+
+  .dot-closed {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full bg-ink-400;
+  }
+
+  /* ---------------------------------------------------------------- imagery */
+
+  /* Every cover sits on a tinted plate, so a slow or missing image degrades to
+     something deliberate rather than a white hole. */
+  .cover {
+    @apply relative overflow-hidden bg-ink-200;
+  }
+
+  .cover img {
+    @apply h-full w-full object-cover;
+  }
+
+  .cover::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0;
+    background: linear-gradient(
+      to top,
+      oklch(0.148 0.007 60 / 0.82) 0%,
+      oklch(0.148 0.007 60 / 0.45) 32%,
+      oklch(0.148 0.007 60 / 0.1) 62%,
+      transparent 85%
+    );
+  }
+
+  .cover-plain::after {
+    display: none;
+  }
+
+  /* --------------------------------------------------------------- skeletons */
+
+  .skeleton {
+    @apply rounded-lg bg-ink-200;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(1 0 0 / 0.6) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  /* ----------------------------------------------------------------- layout */
+
+  .shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
+  .section-title {
+    @apply text-xl font-bold tracking-tight text-ink-900 sm:text-2xl;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-brand-700;
+  }
+
+  /* Entrance stagger. Items animate in order without per-item JS. */
+  .stagger > * {
+    animation: var(--animate-rise);
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+}
+
+
+/* Shared button base. Declared as a utility, not a component class, because
+   Tailwind 4 can only @apply utilities — `.btn-primary { @apply btn }` fails
+   against a plain class. */
+@utility btn {
+  display: inline-flex;
+  min-height: --spacing(11);
+  align-items: center;
+  justify-content: center;
+  gap: --spacing(2);
+  border-radius: var(--radius-xl);
+  padding-inline: --spacing(4);
+  padding-block: --spacing(2.5);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: 600;
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-out-soft);
+}
+
+@utility btn {
+  &:active {
+    scale: 0.98;
+  }
+  &:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+}
+
+@utility text-shadow-hero {
+  text-shadow: 0 1px 2px oklch(0.148 0.007 60 / 0.5), 0 2px 24px oklch(0.148 0.007 60 / 0.35);
 }

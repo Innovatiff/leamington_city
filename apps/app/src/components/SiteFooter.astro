@@ -1,0 +1,93 @@
+---
+import {
+  BUSINESS_CATEGORIES,
+  categoryMessageKey,
+  localizedPath,
+  translate,
+  type BusinessCategory,
+  type Locale,
+  type MessageKey,
+} from '@leamington/shared';
+import { categoryPath, ROUTES } from '../lib/routes';
+
+interface Props {
+  locale: Locale;
+  /** Categories that actually have listings — the rest would be dead links. */
+  categories?: BusinessCategory[];
+}
+
+const { locale, categories = [] } = Astro.props;
+const t = (key: MessageKey) => translate(locale, key);
+const shown = (categories.length > 0 ? categories : [...BUSINESS_CATEGORIES]).slice(0, 10);
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-16 border-t border-ink-200 bg-ink-50">
+  <div class="shell grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <p class="text-[17px] font-extrabold tracking-tight text-ink-900">Leamington</p>
+      <p class="mt-2 max-w-xs text-sm text-ink-600">{t('footer.tagline')}</p>
+    </div>
+
+    <nav aria-labelledby="f-explore">
+      <p id="f-explore" class="text-xs font-bold uppercase tracking-wider text-ink-500">
+        {t('footer.explore')}
+      </p>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          [ROUTES.directory, ROUTES.offers, ROUTES.jobs, ROUTES.search].map((href, index) => (
+            <li>
+              <a
+                href={localizedPath(locale, href)}
+                class="text-ink-600 transition hover:text-brand-700"
+              >
+                {t(
+                  (['nav.directory', 'nav.offers', 'nav.jobs', 'search.title'] as const)[
+                    index
+                  ] as MessageKey,
+                )}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <nav aria-labelledby="f-cats">
+      <p id="f-cats" class="text-xs font-bold uppercase tracking-wider text-ink-500">
+        {t('footer.categories')}
+      </p>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          shown.map((category) => (
+            <li>
+              <a
+                href={categoryPath(category, locale)}
+                class="text-ink-600 transition hover:text-brand-700"
+              >
+                {t(categoryMessageKey(category))}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wider text-ink-500">
+        {t('footer.owners')}
+      </p>
+      <p class="mt-3 text-sm text-ink-600">{t('footer.ownersBlurb')}</p>
+      <a href={ROUTES.portal} class="btn-secondary mt-3" rel="noopener">
+        {t('nav.forBusiness')}
+      </a>
+    </div>
+  </div>
+
+  <div class="border-t border-ink-200">
+    <div class="shell flex flex-col gap-1 py-5 text-xs text-ink-500 sm:flex-row sm:justify-between">
+      <p>© {year} Leamington · {t('footer.builtIn')}</p>
+      <p>{t('footer.note')}</p>
+    </div>
+  </div>
+</footer>

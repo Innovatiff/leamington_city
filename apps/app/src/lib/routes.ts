@@ -43,7 +43,14 @@ export const ROUTES = {
   search: '/search',
   /** Static JSON consumed by the search island. Not locale-specific. */
   searchIndex: '/search-index.json',
+  /** The owner portal is a separate app on its own host. */
+  portal: 'https://portal.leamington.city',
 } as const;
+
+/** Where a "claim this listing" button points, for a given business. */
+export function claimUrl(businessId: string): string {
+  return `${ROUTES.portal}/claim?business=${encodeURIComponent(businessId)}`;
+}
 
 export function path(route: string, locale: Locale): string {
   return localizedPath(locale, route);

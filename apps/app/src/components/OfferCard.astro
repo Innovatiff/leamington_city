@@ -1,71 +1,124 @@
 ---
-import { formatDate, formatMoney, pick, translate, type Locale, type Offer } from '@leamington/shared';
+import Avatar from './Avatar.astro';
+import {
+  formatDate,
+  formatMoney,
+  pick,
+  translate,
+  type Locale,
+  type MessageKey,
+  type Offer,
+} from '@leamington/shared';
+import { businessPath } from '../lib/routes';
 
 interface Props {
   offer: Offer;
   locale: Locale;
   /** Business pages already say whose offer it is. */
   showBusiness?: boolean;
+  index?: number;
 }
 
-const { offer, locale, showBusiness = true } = Astro.props;
+const { offer, locale, showBusiness = true, index = 0 } = Astro.props;
+const t = (key: MessageKey, params?: Record<string, string | number>) =>
+  translate(locale, key, params);
 
-function headline(): string | null {
-  if (offer.kind === 'percent' && offer.percentOff !== null) {
-    return translate(locale, 'offer.percentOff', { percent: offer.percentOff });
-  }
-  if (offer.kind === 'amount' && offer.amountOff) {
-    return translate(locale, 'offer.amountOff', {
-      amount: formatMoney(offer.amountOff, locale),
-    });
-  }
-  if (offer.kind === 'bogo') return translate(locale, 'offer.bogo');
-  if (offer.kind === 'freebie') return translate(locale, 'offer.freebie');
-  return null;
+/** The big number on the ticket. Falls back to the offer kind when there is none. */
+function headline(): string {
+  if (offer.kind === 'percent' && offer.percentOff !== null) return `${offer.percentOff}%`;
+  if (offer.kind === 'amount' && offer.amountOff) return formatMoney(offer.amountOff, locale);
+  if (offer.kind === 'bogo') return '2×1';
+  if (offer.kind === 'freebie') return t('offer.freebie');
+  return t('offer.title');
 }
 
-const badge = headline();
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+// Build-time approximation: it drives an "ending soon" flag, not a countdown,
+// so a few hours of drift between build and view cannot mislead anyone.
+const daysLeft = Math.ceil((offer.endsAt.getTime() - Date.now()) / MS_PER_DAY);
+const endingSoon = daysLeft <= 3;
+
+const endingLabel =
+  daysLeft <= 0
+    ? t('feed.endsToday')
+    : t('feed.endsOn', { date: formatDate(offer.endsAt, locale) });
+
+const claimed =
+  offer.redemptionLimit !== null
+    ? Math.min(100, Math.round((offer.redemptionCount / offer.redemptionLimit) * 100))
+    : null;
+
+const href = `${businessPath(offer.business, locale)}#offer-${offer.id}`;
 ---
 
-<article id={`offer-${offer.id}`} class="card">
-  <div class="flex items-start gap-3">
+<li id={`offer-${offer.id}`} style={`--i:${index}`}>
+  <a href={href} class="card card-interactive group flex h-full flex-col">
+    <div class="flex items-start gap-3.5 p-4">
+      {/* The value, as a ticket stub. This is what someone scans for. */}
+      <div
+        class="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-600
+          text-center text-white shadow-[--shadow-soft]"
+      >
+        <span class="px-1 text-base font-extrabold leading-none tracking-tight">
+          {headline()}
+        </span>
+      </div>
+
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-1.5">
+          {
+            offer.featured && (
+              <span class="badge bg-amber-100 text-amber-800">★</span>
+            )
+          }
+          {
+            endingSoon && (
+              <span class="badge bg-brand-50 text-brand-700">{endingLabel}</span>
+            )
+          }
+        </div>
+
+        <h3 class="mt-1 text-[15px] font-bold leading-snug text-ink-900">
+          {pick(offer.title, locale)}
+        </h3>
+        <p class="mt-1 line-clamp-2 text-sm text-ink-600">{pick(offer.description, locale)}</p>
+      </div>
+    </div>
+
     {
-      offer.imageUrl && (
-        <img
-          src={offer.imageUrl}
-          alt=""
-          width="64"
-          height="64"
-          loading="lazy"
-          decoding="async"
-          class="h-16 w-16 shrink-0 rounded-lg object-cover"
-        />
+      showBusiness && (
+        <div class="mt-auto flex items-center gap-2.5 border-t border-ink-100 px-4 py-3">
+          <Avatar
+            name={offer.business.name}
+            logoUrl={offer.business.logoUrl}
+            seed={offer.business.slug}
+            size="sm"
+          />
+          <span class="min-w-0 flex-1 truncate text-sm font-semibold text-ink-700">
+            {offer.business.name}
+          </span>
+          <span
+            class="text-xs font-semibold text-brand-700 opacity-0 transition group-hover:opacity-100"
+            aria-hidden="true"
+          >
+            →
+          </span>
+        </div>
       )
     }
-    <div class="min-w-0 flex-1">
-      {badge && (
-        <p class="text-sm font-bold text-brand-600">{badge}</p>
-      )}
-      <h3 class="text-base font-semibold text-neutral-900">
-        {pick(offer.title, locale)}
-      </h3>
-      {
-        showBusiness && (
-          <p class="truncate text-sm text-neutral-600">{offer.business.name}</p>
-        )
-      }
-      <p class="mt-1 text-sm text-neutral-700">{pick(offer.description, locale)}</p>
-      <p class="mt-2 text-xs text-neutral-500">
-        {translate(locale, 'feed.endsOn', { date: formatDate(offer.endsAt, locale) })}
-      </p>
-      {
-        pick(offer.terms, locale) && (
-          <details class="mt-2 text-xs text-neutral-500">
-            <summary class="cursor-pointer">{translate(locale, 'offer.terms')}</summary>
-            <p class="mt-1">{pick(offer.terms, locale)}</p>
-          </details>
-        )
-      }
-    </div>
-  </div>
-</article>
+
+    {
+      claimed !== null && (
+        <div class="px-4 pb-3.5">
+          {/* Scarcity, honestly reported: this is the real counter. */}
+          <div class="h-1.5 overflow-hidden rounded-full bg-ink-200">
+            <div class="h-full rounded-full bg-brand-500" style={`width:${claimed}%`} />
+          </div>
+          <p class="mt-1.5 text-[11px] font-medium text-ink-500">
+            {offer.redemptionCount}/{offer.redemptionLimit}
+          </p>
+        </div>
+      )
+    }
+  </a>
+</li>

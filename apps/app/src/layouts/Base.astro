@@ -1,14 +1,15 @@
 ---
 import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import {
   alternateLocale,
   localizedPath,
   translate,
+  type BusinessCategory,
   type Locale,
-  type MessageKey,
 } from '@leamington/shared';
 import { htmlLang } from '../lib/seo';
-import { ROUTES } from '../lib/routes';
 
 interface Props {
   locale: Locale;
@@ -16,14 +17,18 @@ interface Props {
   description: string;
   /**
    * Path without the locale prefix, e.g. `/restaurants/erie-shore-diner`.
-   * Both locale URLs are derived from it, which is what keeps the hreflang
-   * pair self-consistent on every page.
+   * Both locale URLs are derived from it, which keeps the hreflang pair
+   * self-consistent on every page.
    */
   path: string;
   image?: string | null;
   jsonLd?: string[];
   noindex?: boolean;
   ogType?: 'website' | 'article' | 'business.business';
+  /** Categories with listings, for the footer. */
+  footerCategories?: BusinessCategory[];
+  /** Full-bleed pages manage their own top spacing. */
+  bleed?: boolean;
 }
 
 const {
@@ -35,6 +40,8 @@ const {
   jsonLd = [],
   noindex = false,
   ogType = 'website',
+  footerCategories = [],
+  bleed = false,
 } = Astro.props;
 
 const site = Astro.site?.toString() ?? 'https://leamington.city';
@@ -43,15 +50,6 @@ const canonical = new URL(localizedPath(locale, path), site).toString();
 const alternateHref = new URL(localizedPath(other, path), site).toString();
 const xDefault = new URL(localizedPath('en', path), site).toString();
 const absoluteImage = image ? new URL(image, site).toString() : null;
-const t = (key: MessageKey) => translate(locale, key);
-
-const nav: readonly { href: string; key: MessageKey }[] = [
-  { href: ROUTES.home, key: 'nav.feed' },
-  { href: ROUTES.directory, key: 'nav.directory' },
-  { href: ROUTES.search, key: 'nav.search' },
-  { href: ROUTES.offers, key: 'nav.offers' },
-  { href: ROUTES.jobs, key: 'nav.jobs' },
-];
 ---
 
 <!doctype html>
@@ -78,6 +76,7 @@ const nav: readonly { href: string; key: MessageKey }[] = [
     <meta property="og:locale" content={htmlLang(locale).replace('-', '_')} />
     <meta property="og:locale:alternate" content={htmlLang(other).replace('-', '_')} />
     {absoluteImage && <meta property="og:image" content={absoluteImage} />}
+    {absoluteImage && <meta property="og:image:width" content="1200" />}
     {absoluteImage && <meta property="og:image:alt" content={title} />}
 
     <meta name="twitter:card" content={absoluteImage ? 'summary_large_image' : 'summary'} />
@@ -85,7 +84,7 @@ const nav: readonly { href: string; key: MessageKey }[] = [
     <meta name="twitter:description" content={description} />
     {absoluteImage && <meta name="twitter:image" content={absoluteImage} />}
 
-    <meta name="theme-color" content="#b23b2f" />
+    <meta name="theme-color" content="#a8341f" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     {/* The map embed is the only third party a page talks to; warm it early. */}
@@ -94,60 +93,21 @@ const nav: readonly { href: string; key: MessageKey }[] = [
     {jsonLd.map((block) => <script type="application/ld+json" is:inline set:html={block} />)}
   </head>
 
-  <body class="flex min-h-dvh flex-col">
+  <body class="flex min-h-dvh flex-col bg-white">
     <a
       href="#main"
-      class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-3"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60]
+        focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:shadow-[--shadow-lift]"
     >
-      {t('common.more')}
+      {translate(locale, 'common.more')}
     </a>
 
-    <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur">
-      <div class="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2">
-        <a href={localizedPath(locale, ROUTES.home)} class="flex font-bold text-brand-600">
-          Leamington
-        </a>
-        <a
-          href={localizedPath(other, path)}
-          class="flex rounded-lg px-3 py-2 text-sm font-semibold text-neutral-700"
-          hreflang={other}
-          rel="alternate"
-        >
-          {translate(other, 'common.languageName')}
-        </a>
-      </div>
-    </header>
+    <SiteHeader locale={locale} path={path} />
 
-    <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-4 py-4">
+    <main id="main" class:list={['flex-1', bleed ? '' : 'shell py-6 sm:py-10']}>
       <slot />
     </main>
 
-    <nav
-      class="sticky bottom-0 border-t border-neutral-200 bg-white"
-      aria-label={t('nav.menu')}
-    >
-      <ul class="mx-auto flex max-w-3xl">
-        {
-          nav.map((item) => {
-            const href = localizedPath(locale, item.href);
-            const current = Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
-            return (
-              <li class="flex-1">
-                <a
-                  href={href}
-                  aria-current={current ? 'page' : undefined}
-                  class:list={[
-                    'flex flex-col justify-center py-3 text-center text-xs font-semibold',
-                    current ? 'text-brand-600' : 'text-neutral-600',
-                  ]}
-                >
-                  {t(item.key)}
-                </a>
-              </li>
-            );
-          })
-        }
-      </ul>
-    </nav>
+    <SiteFooter locale={locale} categories={footerCategories} />
   </body>
 </html>

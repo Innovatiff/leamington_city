@@ -3,18 +3,25 @@ import BusinessView from '../../../views/BusinessView.astro';
 import {
   categorySlug,
   type Business,
+  type BusinessCategory,
+  type Job,
   type Offer,
 } from '@leamington/shared';
-import { getBusinesses, getLiveOffers } from '../../../lib/content';
+import { getBusinesses, getLiveOffers, getOpenJobs } from '../../../lib/content';
 
 /**
  * A page per business at `/{category}/{slug}`.
  *
- * Offers are grouped once here rather than queried per page — with a few
- * hundred businesses that is the difference between two reads and hundreds.
+ * Offers, jobs and same-category neighbours are grouped once here rather than
+ * queried per page — with a few hundred businesses that is the difference
+ * between three reads and several hundred.
  */
 export async function getStaticPaths() {
-  const [businesses, offers] = await Promise.all([getBusinesses(), getLiveOffers()]);
+  const [businesses, offers, jobs] = await Promise.all([
+    getBusinesses(),
+    getLiveOffers(),
+    getOpenJobs(),
+  ]);
 
   const offersByBusiness = new Map<string, Offer[]>();
   for (const offer of offers) {
@@ -23,13 +30,49 @@ export async function getStaticPaths() {
     offersByBusiness.set(offer.businessId, bucket);
   }
 
+  const jobsByBusiness = new Map<string, Job[]>();
+  for (const job of jobs) {
+    const bucket = jobsByBusiness.get(job.businessId) ?? [];
+    bucket.push(job);
+    jobsByBusiness.set(job.businessId, bucket);
+  }
+
+  const byCategory = new Map<BusinessCategory, Business[]>();
+  for (const business of businesses) {
+    const bucket = byCategory.get(business.category) ?? [];
+    bucket.push(business);
+    byCategory.set(business.category, bucket);
+  }
+  const siblings = [...byCategory.keys()];
+
   return businesses.map((business) => ({
     params: { category: categorySlug(business.category), slug: business.slug },
-    props: { business, offers: offersByBusiness.get(business.id) ?? [] },
+    props: {
+      business,
+      offers: offersByBusiness.get(business.id) ?? [],
+      jobs: jobsByBusiness.get(business.id) ?? [],
+      related: (byCategory.get(business.category) ?? [])
+        .filter((entry) => entry.id !== business.id)
+        .slice(0, 4),
+      siblings,
+    },
   }));
 }
 
-const { business, offers } = Astro.props as { business: Business; offers: Offer[] };
+const { business, offers, jobs, related, siblings } = Astro.props as {
+  business: Business;
+  offers: Offer[];
+  jobs: Job[];
+  related: Business[];
+  siblings: BusinessCategory[];
+};
 ---
 
-<BusinessView locale="es" business={business} offers={offers} />
+<BusinessView
+  locale="es"
+  business={business}
+  offers={offers}
+  jobs={jobs}
+  related={related}
+  siblings={siblings}
+/>

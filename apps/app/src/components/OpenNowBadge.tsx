@@ -13,6 +13,8 @@ import {
 interface Props {
   hours: WeekHours | null;
   locale: Locale;
+  /** Card-sized: the state and nothing else. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -25,7 +27,12 @@ interface Props {
  * which also means the answer is right for a phone whose clock is set to
  * another time zone, because the evaluation happens in America/Toronto.
  */
-export default function OpenNowBadge({ hours, locale, className = '' }: Props) {
+export default function OpenNowBadge({
+  hours,
+  locale,
+  compact = false,
+  className = '',
+}: Props) {
   const [state, setState] = useState<OpenState | null>(null);
 
   useEffect(() => {
@@ -40,13 +47,15 @@ export default function OpenNowBadge({ hours, locale, className = '' }: Props) {
   }, [hours]);
 
   // Reserve the line so the badge appearing does not shift the layout.
-  if (!state) return <p className={`h-6 ${className}`} aria-hidden="true" />;
+  if (!state) {
+    return <span className={`block h-5 ${className}`} aria-hidden="true" />;
+  }
 
   if (state.unknown) {
     return (
-      <p className={`text-sm text-neutral-500 ${className}`}>
+      <span className={`text-xs font-medium text-ink-500 ${className}`}>
         {translate(locale, 'business.hoursUnknown')}
-      </p>
+      </span>
     );
   }
 
@@ -57,29 +66,33 @@ export default function OpenNowBadge({ hours, locale, className = '' }: Props) {
     );
 
   if (state.open) {
+    // closesAt can exceed 1440 when the interval runs past midnight.
+    const closes =
+      state.closesAt !== null ? formatTimeOfDay(state.closesAt % 1440, locale) : null;
+
     return (
-      <p className={`text-sm font-semibold text-green-700 ${className}`}>
-        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-600" />
+      <span
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold text-leaf-700 ${className}`}
+      >
+        <span className="dot-open" />
         {translate(locale, 'business.openNow')}
-        {state.closesAt !== null && (
-          <span className="ml-1 font-normal text-neutral-600">
-            ·{' '}
-            {translate(locale, 'business.closesAt', {
-              // closesAt can exceed 1440 when the interval runs past midnight.
-              time: formatTimeOfDay(state.closesAt % 1440, locale),
-            })}
+        {!compact && closes && (
+          <span className="font-medium text-ink-500">
+            · {translate(locale, 'business.closesAt', { time: closes })}
           </span>
         )}
-      </p>
+      </span>
     );
   }
 
   return (
-    <p className={`text-sm font-semibold text-neutral-700 ${className}`}>
-      <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-neutral-400" />
+    <span
+      className={`inline-flex items-center gap-1.5 text-xs font-semibold text-ink-500 ${className}`}
+    >
+      <span className="dot-closed" />
       {translate(locale, 'business.closedNow')}
-      {state.opensAt !== null && state.opensWeekday !== null && (
-        <span className="ml-1 font-normal text-neutral-600">
+      {!compact && state.opensAt !== null && state.opensWeekday !== null && (
+        <span className="font-medium text-ink-400">
           ·{' '}
           {translate(locale, 'business.opensOn', {
             day: weekdayName(state.opensWeekday),
@@ -87,6 +100,6 @@ export default function OpenNowBadge({ hours, locale, className = '' }: Props) {
           })}
         </span>
       )}
-    </p>
+    </span>
   );
 }

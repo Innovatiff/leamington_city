@@ -3,8 +3,10 @@ import Base from '../layouts/Base.astro';
 import OfferCard from '../components/OfferCard.astro';
 import MapEmbed from '../components/MapEmbed.astro';
 import PhotoGallery from '../components/PhotoGallery.astro';
+import BusinessCard from '../components/BusinessCard.astro';
 import ClickoutLink from '../components/ClickoutLink';
 import OpenNowBadge from '../components/OpenNowBadge';
+import SectionHeader from '../components/SectionHeader.astro';
 import {
   categoryMessageKey,
   formatPhone,
@@ -14,25 +16,41 @@ import {
   truncate,
   INTL_LOCALES,
   type Business,
+  type BusinessCategory,
+  type Job,
   type Locale,
   type MessageKey,
   type Offer,
 } from '@leamington/shared';
 import { businessJsonLd, offerJsonLd, serializeJsonLd } from '../lib/seo';
-import { businessPathBare, categoryPath } from '../lib/routes';
+import { businessPathBare, categoryPath, claimUrl } from '../lib/routes';
+import { businessCover, businessPhotos } from '../lib/covers';
 
 interface Props {
   locale: Locale;
   business: Business;
   offers: Offer[];
+  jobs?: Job[];
+  /** Other businesses in the same category. */
+  related?: Business[];
+  siblings?: BusinessCategory[];
 }
 
-const { locale, business, offers } = Astro.props;
+const {
+  locale,
+  business,
+  offers,
+  jobs = [],
+  related = [],
+  siblings = [],
+} = Astro.props;
+
 const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
 
 const site = Astro.site?.toString() ?? 'https://leamington.city';
 const categoryName = t(categoryMessageKey(business.category));
+const cover = businessCover(business);
 
 const description =
   truncate(pick(business.shortDescription, locale), 160) ||
@@ -45,6 +63,14 @@ const jsonLd = [
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const weekdayNames = new Intl.DateTimeFormat(INTL_LOCALES[locale], { weekday: 'long' });
+const fullAddress = [
+  business.address.line1,
+  business.address.line2,
+  `${business.address.city}, ${business.address.province}`,
+  business.address.postalCode,
+]
+  .filter(Boolean)
+  .join(', ');
 ---
 
 <Base
@@ -52,154 +78,235 @@ const weekdayNames = new Intl.DateTimeFormat(INTL_LOCALES[locale], { weekday: 'l
   path={businessPathBare(business)}
   title={`${business.name} · ${categoryName} · Leamington`}
   description={description}
-  image={business.heroUrl ?? business.logoUrl}
+  image={cover}
   jsonLd={jsonLd}
   ogType="business.business"
+  footerCategories={siblings}
+  bleed
 >
-  <article>
-    <nav class="text-sm">
-      <a href={categoryPath(business.category, locale)} class="text-brand-600 underline">
-        {t('business.backToCategory', { category: categoryName })}
-      </a>
-    </nav>
+  {/* ------------------------------------------------------------------ hero */}
+  <section class="relative isolate">
+    <div class="cover h-52 sm:h-72 lg:h-80">
+      <img src={cover} alt="" width="1200" height="500" fetchpriority="high" decoding="async" />
+    </div>
 
-    <header class="mt-3 flex items-start gap-3">
-      {
-        business.logoUrl && (
-          <img
-            src={business.logoUrl}
-            alt=""
-            width="64"
-            height="64"
-            decoding="async"
-            class="h-16 w-16 shrink-0 rounded-xl object-cover"
-          />
-        )
-      }
-      <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-neutral-900">{business.name}</h1>
-        <p class="text-sm text-neutral-600">
-          {business.address.line1}{business.address.line2 ? `, ${business.address.line2}` : ''}
-          <br />
-          {business.address.city}, {business.address.province}
-          {business.address.postalCode ? ` ${business.address.postalCode}` : ''}
-        </p>
-        {/* client:load, not client:visible — this sits above the fold and is
-            the single most useful fact on the page. */}
-        <OpenNowBadge client:load hours={business.hours} locale={locale} className="mt-1" />
-      </div>
-    </header>
-
-    {
-      pick(business.description, locale) && (
-        <p class="mt-4 text-neutral-800">{pick(business.description, locale)}</p>
-      )
-    }
-
-    <div class="mt-5 grid gap-2">
-      {
-        business.websiteUrl ? (
-          /* The primary CTA. Every tap is recorded to /clickouts by a Cloud
-             Function before the browser leaves. */
-          <ClickoutLink
-            client:visible
-            targetType="business"
-            targetId={business.id}
-            fallbackUrl={business.websiteUrl}
-            locale={locale}
-            source="detail"
-            label={t('business.visitWebsite')}
-          />
-        ) : business.tier === 'stub' ? (
-          /* No website and nobody has claimed it: the useful action is to ask
-             the owner to take it over. */
+    <div class="shell relative -mt-16 sm:-mt-20">
+      <div class="rounded-3xl border border-ink-200/70 bg-white p-5 shadow-[--shadow-lift] sm:p-7">
+        <nav class="text-xs font-semibold">
           <a
-            href={`https://portal.leamington.city/claim?business=${business.id}`}
-            class="btn-primary w-full"
-            rel="noopener"
+            href={categoryPath(business.category, locale)}
+            class="text-brand-700 underline-offset-2 hover:underline"
           >
-            {t('business.claimCta')}
+            {categoryName}
           </a>
-        ) : (
-          <p class="rounded-lg bg-neutral-50 p-3 text-center text-sm text-neutral-500">
-            {t('business.noWebsite')}
+        </nav>
+
+        <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+              {business.name}
+            </h1>
+            <p class="mt-1.5 text-sm text-ink-600">{fullAddress}</p>
+            <div class="mt-2">
+              {/* client:load, not client:visible — this sits above the fold and
+                  is the single most useful fact on the page. */}
+              <OpenNowBadge client:load hours={business.hours} locale={locale} />
+            </div>
+          </div>
+
+          {
+            business.tier !== 'stub' && (
+              <span class="badge shrink-0 bg-leaf-50 text-leaf-700">
+                {t('business.claimThis')}
+              </span>
+            )
+          }
+        </div>
+
+        {
+          pick(business.shortDescription, locale) && (
+            <p class="mt-4 text-[15px] leading-relaxed text-ink-700">
+              {pick(business.shortDescription, locale)}
+            </p>
+          )
+        }
+
+        {/* The primary action. Kept together with the phone number, because a
+            phone and a website are the two things people actually came for. */}
+        <div class="mt-5 flex flex-col gap-2.5 sm:flex-row">
+          {
+            business.websiteUrl ? (
+              <ClickoutLink
+                client:visible
+                targetType="business"
+                targetId={business.id}
+                fallbackUrl={business.websiteUrl}
+                locale={locale}
+                source="detail"
+                label={t('business.visitWebsite')}
+                className="btn-primary btn-lg flex-1"
+              />
+            ) : business.tier === 'stub' ? (
+              <a href={claimUrl(business.id)} class="btn-primary btn-lg flex-1" rel="noopener">
+                {t('business.claimCta')}
+              </a>
+            ) : (
+              <p class="flex-1 rounded-xl bg-ink-50 px-4 py-3 text-center text-sm text-ink-500">
+                {t('business.noWebsite')}
+              </p>
+            )
+          }
+
+          {
+            business.phone && (
+              <a href={`tel:${business.phone}`} class="btn-secondary btn-lg sm:flex-none">
+                {formatPhone(business.phone)}
+              </a>
+            )
+          }
+        </div>
+
+        {
+          business.tags.length > 0 && (
+            <ul class="mt-4 flex flex-wrap gap-1.5">
+              {business.tags.map((tag) => (
+                <li class="badge bg-ink-100 text-ink-600">{tag.replace(/-/g, ' ')}</li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="shell grid gap-8 py-10 lg:grid-cols-[1fr_20rem]">
+    <div class="min-w-0">
+      {
+        pick(business.description, locale) && (
+          <p class="text-[15px] leading-relaxed text-ink-700">
+            {pick(business.description, locale)}
           </p>
         )
       }
 
+      <PhotoGallery
+        photos={businessPhotos(business)}
+        name={business.name}
+        locale={locale}
+      />
+
       {
-        business.phone && (
-          <a href={`tel:${business.phone}`} class="btn-secondary">
-            {t('business.call')} · {formatPhone(business.phone)}
-          </a>
+        offers.length > 0 && (
+          <section class="mt-10">
+            <SectionHeader eyebrow={t('offer.title')} title={t('home.dealsTitle')} />
+            <ul class="stagger mt-4 grid gap-4 sm:grid-cols-2">
+              {offers.map((offer, index) => (
+                <OfferCard
+                  offer={offer}
+                  locale={locale}
+                  showBusiness={false}
+                  index={index}
+                />
+              ))}
+            </ul>
+          </section>
         )
       }
+
+      {
+        jobs.length > 0 && (
+          <section class="mt-10">
+            <SectionHeader eyebrow={t('job.title')} title={t('home.jobsTitle')} />
+            <ul class="mt-4 space-y-3">
+              {jobs.map((job) => (
+                <li class="card p-4">
+                  <p class="font-bold text-ink-900">{pick(job.title, locale)}</p>
+                  <p class="mt-1 text-sm text-ink-600">
+                    {truncate(pick(job.description, locale), 160)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      <MapEmbed business={business} locale={locale} />
     </div>
 
-    <PhotoGallery photos={business.photos} name={business.name} locale={locale} />
+    {/* --------------------------------------------------------------- aside */}
+    <aside class="lg:sticky lg:top-24 lg:self-start">
+      {
+        business.hours && (
+          <section class="card p-5">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-ink-500">
+              {t('business.hours')}
+            </h2>
+            <dl class="mt-3 space-y-1.5 text-sm">
+              {WEEKDAY_ORDER.map((day) => {
+                const intervals = business.hours?.[day] ?? [];
+                // 2024-01-07 was a Sunday, so `day` indexes straight onto it.
+                const label = weekdayNames.format(new Date(Date.UTC(2024, 0, 7 + day)));
+                return (
+                  <div class="flex items-baseline justify-between gap-3">
+                    <dt class="capitalize text-ink-600">{label}</dt>
+                    <dd
+                      class:list={[
+                        'text-right font-medium',
+                        intervals.length === 0 ? 'text-ink-400' : 'text-ink-900',
+                      ]}
+                    >
+                      {intervals.length === 0
+                        ? t('business.closedToday')
+                        : intervals
+                            .map(
+                              (interval) =>
+                                `${formatTimeOfDay(interval.open, locale)}–${formatTimeOfDay(
+                                  interval.close,
+                                  locale,
+                                )}`,
+                            )
+                            .join(', ')}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </section>
+        )
+      }
 
-    {
-      business.hours && (
-        <section class="mt-6">
-          <h2 class="text-lg font-semibold text-neutral-900">{t('business.hours')}</h2>
-          <dl class="mt-2 divide-y divide-neutral-100 text-sm">
-            {WEEKDAY_ORDER.map((day) => {
-              const intervals = business.hours?.[day] ?? [];
-              // 2024-01-07 was a Sunday, so `day` indexes straight onto it.
-              const label = weekdayNames.format(new Date(Date.UTC(2024, 0, 7 + day)));
-              return (
-                <div class="flex justify-between py-2">
-                  <dt class="capitalize text-neutral-600">{label}</dt>
-                  <dd class="text-neutral-900">
-                    {intervals.length === 0
-                      ? t('business.closedToday')
-                      : intervals
-                          .map(
-                            (interval) =>
-                              `${formatTimeOfDay(interval.open, locale)}–${formatTimeOfDay(
-                                interval.close,
-                                locale,
-                              )}`,
-                          )
-                          .join(', ')}
-                  </dd>
-                </div>
-              );
-            })}
-          </dl>
-        </section>
-      )
-    }
+      {
+        business.tier === 'stub' && (
+          <section class="card mt-4 bg-ink-50 p-5">
+            <p class="text-sm text-ink-600">{t('business.unclaimedNote')}</p>
+            <p class="mt-2 font-bold text-ink-900">{t('business.claimThis')}</p>
+            <a href={claimUrl(business.id)} class="btn-secondary mt-3 w-full" rel="noopener">
+              {t('business.claimCta')}
+            </a>
+          </section>
+        )
+      }
+    </aside>
+  </div>
 
-    <MapEmbed business={business} locale={locale} />
-
-    {
-      offers.length > 0 && (
-        <section class="mt-6">
-          <h2 class="text-lg font-semibold text-neutral-900">{t('offer.title')}</h2>
-          <div class="mt-2 space-y-3">
-            {offers.map((offer) => (
-              <OfferCard offer={offer} locale={locale} showBusiness={false} />
+  {/* --------------------------------------------------------------- related */}
+  {
+    related.length > 0 && (
+      <section class="border-t border-ink-100 bg-ink-50 py-10">
+        <div class="shell">
+          <SectionHeader
+            title={t('business.inCategory', { category: categoryName })}
+            href={categoryPath(business.category, locale)}
+            linkLabel={t('home.viewAll')}
+          />
+          <ul class="stagger mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((entry, index) => (
+              <BusinessCard business={entry} locale={locale} index={index} />
             ))}
-          </div>
-        </section>
-      )
-    }
-
-    {
-      business.tier === 'stub' && (
-        <section class="mt-8 rounded-xl bg-neutral-50 p-4">
-          <p class="text-sm text-neutral-600">{t('business.unclaimedNote')}</p>
-          <p class="mt-2 font-semibold text-neutral-900">{t('business.claimThis')}</p>
-          <a
-            href={`https://portal.leamington.city/claim?business=${business.id}`}
-            class="btn-secondary mt-2 w-full"
-            rel="noopener"
-          >
-            {t('business.claimCta')}
-          </a>
-        </section>
-      )
-    }
-  </article>
+          </ul>
+        </div>
+      </section>
+    )
+  }
 </Base>

@@ -1,0 +1,137 @@
+---
+import {
+  alternateLocale,
+  localizedPath,
+  translate,
+  type Locale,
+  type MessageKey,
+} from '@leamington/shared';
+import { ROUTES } from '../lib/routes';
+
+interface Props {
+  locale: Locale;
+  /** Locale-less path of the current page, for the language switch. */
+  path: string;
+}
+
+const { locale, path } = Astro.props;
+const t = (key: MessageKey) => translate(locale, key);
+const other = alternateLocale(locale);
+
+const nav: readonly { href: string; key: MessageKey }[] = [
+  { href: ROUTES.directory, key: 'nav.directory' },
+  { href: ROUTES.offers, key: 'nav.offers' },
+  { href: ROUTES.jobs, key: 'nav.jobs' },
+];
+
+const current = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isCurrent = (href: string): boolean => {
+  const target = localizedPath(locale, href).replace(/\/$/, '') || '/';
+  return target === '/' ? current === '/' : current.startsWith(target);
+};
+---
+
+{/* Navigation lives at the top: this is a platform, not a tab bar app, and the
+    bottom of a phone screen belongs to the page's own primary action. */}
+<header
+  class="sticky top-0 z-50 border-b border-ink-200/80 bg-white/85 backdrop-blur-md
+    supports-[backdrop-filter]:bg-white/70"
+>
+  <div class="shell flex h-16 items-center gap-3">
+    <a
+      href={localizedPath(locale, ROUTES.home)}
+      class="group flex shrink-0 items-center gap-2"
+      aria-label="Leamington"
+    >
+      <span
+        class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white
+          shadow-[--shadow-soft] transition group-hover:bg-brand-700"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
+          <path
+            d="M12 21s7-5.3 7-10.6A7 7 0 0 0 5 10.4C5 15.7 12 21 12 21Z"
+            fill="currentColor"
+            opacity=".28"></path>
+          <circle cx="12" cy="10.2" r="3.1" fill="currentColor"></circle>
+        </svg>
+      </span>
+      <span class="hidden text-[17px] font-extrabold tracking-tight text-ink-900 sm:block">
+        Leamington
+      </span>
+    </a>
+
+    <nav class="ml-1 hidden items-center gap-1 md:flex" aria-label={t('nav.menu')}>
+      {
+        nav.map((item) => (
+          <a
+            href={localizedPath(locale, item.href)}
+            aria-current={isCurrent(item.href) ? 'page' : undefined}
+            class:list={[
+              'relative rounded-lg px-3 py-2 text-sm font-semibold transition',
+              isCurrent(item.href)
+                ? 'text-brand-700'
+                : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
+            ]}
+          >
+            {t(item.key)}
+            {isCurrent(item.href) && (
+              <span class="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand-600" />
+            )}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="ml-auto flex items-center gap-1.5">
+      <a
+        href={localizedPath(locale, ROUTES.search)}
+        class="btn-ghost px-3"
+        aria-label={t('search.title')}
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.2-3.2" stroke-linecap="round"></path>
+        </svg>
+        <span class="hidden lg:inline">{t('search.title')}</span>
+      </a>
+
+      <a
+        href={localizedPath(other, path)}
+        hreflang={other}
+        rel="alternate"
+        class="btn-ghost px-3 text-[13px] uppercase tracking-wide"
+      >
+        {other}
+      </a>
+
+      <a href={ROUTES.portal} class="btn-primary hidden sm:inline-flex" rel="noopener">
+        {t('nav.forBusiness')}
+      </a>
+    </div>
+  </div>
+
+  {/* Section links on small screens, where the top row has no room for them.
+      A <nav> rather than a <div>: it is the primary navigation at this
+      breakpoint, and assistive tech should be able to find it as such. */}
+  <nav
+    class="shell -mt-1 flex gap-1 overflow-x-auto pb-2 no-scrollbar md:hidden"
+    aria-label={t('nav.menu')}
+  >
+    {
+      nav.map((item) => (
+        <a
+          href={localizedPath(locale, item.href)}
+          aria-current={isCurrent(item.href) ? 'page' : undefined}
+          class:list={[
+            'shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition',
+            isCurrent(item.href)
+              ? 'bg-brand-50 text-brand-700'
+              : 'text-ink-600 hover:bg-ink-100',
+          ]}
+        >
+          {t(item.key)}
+        </a>
+      ))
+    }
+  </nav>
+</header>

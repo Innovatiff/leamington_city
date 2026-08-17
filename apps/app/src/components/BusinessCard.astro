@@ -1,46 +1,109 @@
 ---
-import { pick, truncate, type Business, type Locale } from '@leamington/shared';
+import Avatar from './Avatar.astro';
+import OpenNowBadge from './OpenNowBadge';
+import {
+  categoryMessageKey,
+  pick,
+  translate,
+  truncate,
+  type Business,
+  type Locale,
+} from '@leamington/shared';
 import { businessPath } from '../lib/routes';
+import { businessCover } from '../lib/covers';
 
 interface Props {
   business: Business;
   locale: Locale;
+  /** `cover` leads with the photo; `row` is a compact list line. */
+  variant?: 'cover' | 'row';
+  /** Position in a staggered list, for the entrance animation. */
+  index?: number;
+  eager?: boolean;
 }
 
-const { business, locale } = Astro.props;
+const { business, locale, variant = 'cover', index = 0, eager = false } = Astro.props;
 
 // `data-hours` is what OpenNowFilter reads. Serialising it per card keeps the
 // filter a pure DOM operation with no second fetch.
 const hoursAttr = business.hours ? JSON.stringify(business.hours) : undefined;
-const summary =
-  truncate(pick(business.shortDescription, locale), 80) || business.address.line1;
+const summary = truncate(pick(business.shortDescription, locale), 96);
+const categoryName = translate(locale, categoryMessageKey(business.category));
+const href = businessPath(business, locale);
+const cover = businessCover(business);
 ---
 
-<li data-business-card data-hours={hoursAttr}>
-  <a href={businessPath(business, locale)} class="card flex items-center gap-3">
-    {
-      business.logoUrl && (
-        <img
-          src={business.logoUrl}
-          alt=""
-          width="48"
-          height="48"
-          loading="lazy"
-          decoding="async"
-          class="h-12 w-12 shrink-0 rounded-full object-cover"
-        />
-      )
-    }
-    <div class="min-w-0 flex-1">
-      <p class="truncate font-semibold text-neutral-900">{business.name}</p>
-      {summary && <p class="truncate text-sm text-neutral-600">{summary}</p>}
-    </div>
-    {
-      business.counts.offers > 0 && (
-        <span class="shrink-0 rounded-full bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
-          {business.counts.offers}
-        </span>
-      )
-    }
-  </a>
-</li>
+{
+  variant === 'cover' ? (
+    <li data-business-card data-hours={hoursAttr} style={`--i:${index}`}>
+      <a href={href} class="card card-interactive group h-full">
+        <div class="cover aspect-[16/10]">
+          <img
+            src={cover}
+            alt=""
+            width="600"
+            height="375"
+            loading={eager ? 'eager' : 'lazy'}
+            decoding="async"
+            class="card-zoom"
+          />
+
+          <span class="badge absolute left-3 top-3 bg-white/92 text-ink-800 backdrop-blur-sm">
+            {categoryName}
+          </span>
+
+          {business.counts.offers > 0 && (
+            <span class="badge absolute right-3 top-3 bg-brand-600 text-white">
+              {translate(locale, 'business.offersCount', { count: business.counts.offers })}
+            </span>
+          )}
+
+          <div class="absolute inset-x-0 bottom-0 p-3.5">
+            <h3 class="text-shadow-hero text-[17px] font-bold leading-tight text-white">
+              {business.name}
+            </h3>
+            <p class="text-shadow-hero mt-0.5 text-xs font-medium text-white/85">
+              {business.address.line1}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 px-3.5 py-3">
+          <OpenNowBadge client:visible hours={business.hours} locale={locale} compact />
+          <span
+            class="text-xs font-semibold text-brand-700 opacity-0 transition group-hover:opacity-100"
+            aria-hidden="true"
+          >
+            →
+          </span>
+        </div>
+
+        {summary && (
+          <p class="border-t border-ink-100 px-3.5 py-2.5 text-sm text-ink-600">{summary}</p>
+        )}
+      </a>
+    </li>
+  ) : (
+    <li data-business-card data-hours={hoursAttr} style={`--i:${index}`}>
+      <a href={href} class="card card-interactive flex items-center gap-3 p-3">
+        <Avatar name={business.name} logoUrl={business.logoUrl} seed={business.slug} />
+        <div class="min-w-0 flex-1">
+          <p class="truncate font-semibold text-ink-900">{business.name}</p>
+          <p class="truncate text-sm text-ink-600">{summary || business.address.line1}</p>
+          <OpenNowBadge
+            client:visible
+            hours={business.hours}
+            locale={locale}
+            compact
+            className="mt-1"
+          />
+        </div>
+        {business.counts.offers > 0 && (
+          <span class="badge shrink-0 bg-brand-50 text-brand-700">
+            {business.counts.offers}
+          </span>
+        )}
+      </a>
+    </li>
+  )
+}

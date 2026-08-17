@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "seed": "node --disable-warning=ExperimentalWarning seed.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "seed:demo": "node --disable-warning=ExperimentalWarning seed-demo.ts"
   },
   "dependencies": {
     "@leamington/shared": "workspace:*",

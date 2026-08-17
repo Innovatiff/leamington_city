@@ -1,0 +1,49 @@
+---
+import { monogram, monogramHue } from '../lib/covers';
+
+interface Props {
+  name: string;
+  logoUrl?: string | null;
+  seed?: string;
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { name, logoUrl = null, seed, size = 'md', class: className = '' } = Astro.props;
+
+const SIZES = {
+  sm: 'h-9 w-9 text-[11px]',
+  md: 'h-12 w-12 text-sm',
+  lg: 'h-16 w-16 text-lg',
+} as const;
+
+// A monogram tile rather than a grey square: a business with no logo still
+// needs to be told apart at a glance in a list of thirty.
+const hue = monogramHue(seed ?? name);
+const tile = `background: linear-gradient(140deg, oklch(0.62 0.13 ${hue}), oklch(0.44 0.12 ${
+  (hue + 38) % 360
+}));`;
+---
+
+{
+  logoUrl ? (
+    <img
+      src={logoUrl}
+      alt=""
+      width="48"
+      height="48"
+      loading="lazy"
+      decoding="async"
+      class={`${SIZES[size]} shrink-0 rounded-xl border border-ink-200 bg-white object-cover ${className}`}
+    />
+  ) : (
+    <span
+      aria-hidden="true"
+      style={tile}
+      class={`${SIZES[size]} inline-flex shrink-0 items-center justify-center rounded-xl
+        font-bold tracking-wide text-white shadow-[--shadow-soft] ${className}`}
+    >
+      {monogram(name)}
+    </span>
+  )
+}

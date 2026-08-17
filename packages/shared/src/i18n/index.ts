@@ -43,6 +43,21 @@ export function useTranslator(locale: Locale) {
 
 export { useTranslator as createTranslator };
 
+/**
+ * Count with the right singular/plural message.
+ *
+ * English and Spanish both need it, and "1 listings" is the kind of detail that
+ * makes a site feel unfinished.
+ */
+export function translateCount(
+  locale: Locale,
+  one: MessageKey,
+  many: MessageKey,
+  count: number,
+): string {
+  return count === 1 ? translate(locale, one) : translate(locale, many, { count });
+}
+
 /** The other locale. Powers the language toggle and hreflang pairs. */
 export function alternateLocale(locale: Locale): Locale {
   return locale === 'en' ? 'es' : 'en';
