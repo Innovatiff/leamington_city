@@ -88,11 +88,13 @@ const absoluteImage = image ? new URL(image, site).toString() : null;
     <meta name="theme-color" content="#a8341f" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-    {/* Listing photography and the map embed are the only third parties a page
-        talks to. Warm the image host early — it is on the critical path. */}
+    {/* Listing photography, the map embed and analytics are the only third
+        parties a page talks to. Warm the image host early — it is the only one
+        on the critical path. */}
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://www.openstreetmap.org" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
     {/*
       Listing photography is remote, so some of it will eventually 404 — a
@@ -127,6 +129,18 @@ const absoluteImage = image ? new URL(image, site).toString() : null;
     >
       {translate(locale, 'common.more')}
     </a>
+
+    {/*
+      Analytics. A bundled module script rather than an island: there is no UI
+      to hydrate, and this way it is deferred by default and shared across every
+      page. `initAnalytics` decides whether it actually starts — see the module
+      for the opt-out and failure handling.
+    */}
+    <script>
+      import { initAnalytics } from '../lib/analytics';
+
+      void initAnalytics();
+    </script>
 
     <SiteHeader locale={locale} path={path} />
 

@@ -1,22 +1,30 @@
 /**
- * Firebase Analytics, off by default.
+ * Firebase Analytics.
  *
- * The console snippet initialises Analytics unconditionally, and this app very
- * deliberately does not. Google Analytics sets identifiers and ships behaviour
- * off-device, and a large share of this site's readers are newcomers and
- * seasonal workers — the group with the least appetite for being tracked and
- * the least ability to object. Turning it on before there is a privacy notice
- * on the site would be a decision made for them.
+ * On by default. Set `PUBLIC_ENABLE_ANALYTICS=0` to turn it off for a build —
+ * useful for a staging deploy you do not want polluting the numbers.
  *
- * So it is one environment variable away, not zero:
+ * Three properties this module guarantees, because analytics is the one thing on
+ * the page that must never matter more than the page:
  *
- *   PUBLIC_ENABLE_ANALYTICS=1
- *
- * Even then it is skipped for anyone signalling Global Privacy Control or Do
- * Not Track, and it is loaded lazily so a reader who never opts in never
- * downloads the SDK.
+ *   1. **It cannot break anything.** Roughly a third of readers run a content
+ *      blocker, and `googletagmanager.com` is on every blocklist. Every path
+ *      here swallows its own failures, so a blocked load is a no-op: nothing
+ *      throws, nothing is left unhandled, and the page renders identically.
+ *      (The Firebase SDK still logs one `TypeError: Failed to fetch` of its own
+ *      when its endpoints are unreachable. That is inside the SDK, not a
+ *      rejection we can intercept — an earlier version of this file tried, with
+ *      an `unhandledrejection` guard that provably never fired. Silencing it
+ *      would mean `setLogLevel('silent')` across all of Firebase, which would
+ *      also hide real Functions errors. Not worth the trade.)
+ *   2. **It is lazy.** The SDK is a dynamic import, so it is never on the
+ *      critical path for first paint on a phone.
+ *   3. **It honours opt-out signals.** Global Privacy Control is a legally
+ *      recognised request in several jurisdictions, and Do Not Track is a plain
+ *      statement of preference. Both are respected.
  */
 
+import type { Analytics } from 'firebase/analytics';
 import { getFirebaseApp } from './firebase';
 
 interface PrivacySignals {
@@ -24,24 +32,64 @@ interface PrivacySignals {
   doNotTrack?: string;
 }
 
-function optedOut(): boolean {
+/** True when the reader has asked, at the browser level, not to be tracked. */
+export function optedOut(): boolean {
   const nav = navigator as Navigator & PrivacySignals;
   if (nav.globalPrivacyControl === true) return true;
   return nav.doNotTrack === '1';
 }
 
+/** Off only when explicitly disabled, so a missing env var still collects. */
 export function analyticsEnabled(): boolean {
-  return import.meta.env.PUBLIC_ENABLE_ANALYTICS === '1';
+  return import.meta.env.PUBLIC_ENABLE_ANALYTICS !== '0';
 }
 
-/** Resolves to `false` when analytics stayed off, for whatever reason. */
-export async function initAnalytics(): Promise<boolean> {
-  if (!analyticsEnabled() || optedOut()) return false;
+let instance: Analytics | null = null;
+let started: Promise<Analytics | null> | null = null;
 
-  const { getAnalytics, isSupported } = await import('firebase/analytics');
-  // Unsupported in some browsers and in every server context.
-  if (!(await isSupported())) return false;
+/**
+ * Initialises Analytics once per page and resolves to `null` when it did not
+ * start — disabled, opted out, unsupported, or blocked.
+ */
+export function initAnalytics(): Promise<Analytics | null> {
+  if (started) return started;
 
-  getAnalytics(getFirebaseApp());
-  return true;
+  started = (async () => {
+    if (!analyticsEnabled() || optedOut()) return null;
+
+    try {
+      const { getAnalytics, isSupported } = await import('firebase/analytics');
+      // False in browsers without the required APIs, and in any server context.
+      if (!(await isSupported())) return null;
+      instance = getAnalytics(getFirebaseApp());
+      return instance;
+    } catch {
+      // Blocked by an extension, offline, or misconfigured. Not our problem to
+      // surface: the reader came here for a phone number, not for telemetry.
+      return null;
+    }
+  })();
+
+  return started;
+}
+
+/**
+ * Records an event, if analytics is running. Never throws and never awaits
+ * anything the caller depends on.
+ *
+ * `page_view` is not sent from here — gtag collects it automatically on load,
+ * and this site is a set of separate documents rather than a single-page app,
+ * so every navigation is already a fresh page view.
+ */
+export function trackEvent(name: string, params: Record<string, unknown> = {}): void {
+  void (async () => {
+    try {
+      const analytics = await initAnalytics();
+      if (!analytics) return;
+      const { logEvent } = await import('firebase/analytics');
+      logEvent(analytics, name, params);
+    } catch {
+      // Same reasoning as above.
+    }
+  })();
 }

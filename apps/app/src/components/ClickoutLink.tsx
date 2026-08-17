@@ -12,6 +12,16 @@ interface Props {
   className?: string;
 }
 
+/** Host only — the full destination URL is already in /clickouts, and an
+ * analytics event does not need to carry query strings that may hold anything. */
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return 'unknown';
+  }
+}
+
 /**
  * The one thing this app does: send people to the business's own website.
  *
@@ -38,6 +48,21 @@ export default function ClickoutLink({
     event.preventDefault();
     if (busy) return;
     setBusy(true);
+
+    // The outbound click is the conversion this whole app exists to produce, so
+    // it is recorded before anything that can fail. Putting this after the
+    // callable would mean losing the event whenever the function is slow, cold,
+    // or unreachable — exactly the cases where the reader still left the site.
+    // `trackEvent` never throws and is not awaited.
+    void import('../lib/analytics').then(({ trackEvent }) => {
+      trackEvent('clickout', {
+        target_type: targetType,
+        target_id: targetId,
+        source,
+        locale,
+        destination_host: safeHost(fallbackUrl),
+      });
+    });
 
     try {
       // Loaded on demand: a reader who never taps this never pays for the SDK.

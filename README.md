@@ -44,12 +44,33 @@ documents them as safe to ship in a client bundle, because access control is
 Google Cloud console anyway: public does not mean "fine for anyone to bill
 against your project".
 
-Analytics is **off** unless `PUBLIC_ENABLE_ANALYTICS=1`. See
-`apps/app/src/lib/analytics.ts` for the reasoning — briefly, a large share of
-this site's readers are newcomers and seasonal workers, and turning on
-behavioural tracking before there is a privacy notice on the site would be a
-decision made on their behalf. It is one variable away, and it still respects
-Global Privacy Control and Do Not Track.
+Firebase Analytics is **on**, initialised from `apps/app/src/lib/analytics.ts`
+by a deferred module script in the shared layout. `page_view` is collected
+automatically by gtag — this is a set of separate documents, not a single-page
+app, so every navigation is already a fresh page view. On top of that,
+`ClickoutLink` sends a `clickout` event carrying target type, source, locale and
+destination *host* (never the full URL — that is already in `/clickouts`, and an
+analytics event should not carry query strings).
+
+Three properties the module guarantees:
+
+- **It cannot break the page.** Around a third of readers run a content blocker
+  and `googletagmanager.com` is on every blocklist, so every path swallows its
+  own failures: a blocked load is a no-op and the page renders identically. The
+  Firebase SDK does still log one `TypeError: Failed to fetch` of its own in that
+  case — that is inside the SDK, and silencing it would mean turning off Firebase
+  logging globally, which would also hide real Functions errors.
+- **It is lazy.** The SDK is a dynamic import and never sits on the critical
+  path for first paint.
+- **It honours opt-out signals.** Global Privacy Control is a legally recognised
+  request in several jurisdictions; Do Not Track is a plain statement of
+  preference. Both are respected, which means your totals will run below true
+  traffic by however many readers send those headers.
+
+Set `PUBLIC_ENABLE_ANALYTICS=0` to disable it for a build — a staging deploy you
+do not want in the numbers, for instance.
+
+Worth pairing with a short privacy page in the footer, which does not exist yet.
 
 Firebase Hosting serves the portal and admin only, from two sites you need to
 create under Hosting: `leamingtoncity-portal` and `leamingtoncity-admin` (or
