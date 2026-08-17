@@ -37,6 +37,19 @@ export function businessCover(business: Pick<Business, 'slug' | 'category' | 'he
 }
 
 /**
+ * Where to fall back if the chosen cover fails to load.
+ *
+ * Always the local generated art, never another remote URL — the whole point is
+ * to land somewhere that cannot itself 404. Wire it to `data-fallback` on the
+ * `<img>` and the listener in Base.astro does the rest.
+ */
+export function coverFallback(
+  business: Pick<Business, 'slug' | 'category'>,
+): string {
+  return categoryCover(business.category, business.slug);
+}
+
+/**
  * Photos for the gallery. Deliberately does NOT fall back to the cover: a
  * one-item gallery showing the same picture as the header reads as a bug, and
  * the section hides itself when this is empty.

@@ -16,6 +16,7 @@ import {
 import { businessPath, categoryPath, categoryPathBare, ROUTES } from '../lib/routes';
 import { serializeJsonLd } from '../lib/seo';
 import { categoryCover } from '../lib/covers';
+import { SITE_URL } from '../lib/site';
 
 interface Props {
   locale: Locale;
@@ -29,7 +30,7 @@ const { locale, category, businesses, siblings } = Astro.props;
 const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
 
-const site = Astro.site?.toString() ?? 'https://leamington.city';
+const site = Astro.site?.toString() ?? SITE_URL;
 const categoryName = t(categoryMessageKey(category));
 const cover = categoryCover(category);
 

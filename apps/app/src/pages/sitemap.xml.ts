@@ -15,6 +15,7 @@ import {
 } from '@leamington/shared';
 import { getBusinesses, getLiveOffers, getOpenJobs } from '../lib/content';
 import { businessPathBare, categoryPathBare, ROUTES } from '../lib/routes';
+import { SITE_URL } from '../lib/site';
 
 interface Entry {
   path: string;
@@ -52,7 +53,7 @@ function urlEntry(site: string, entry: Entry, locale: Locale): string {
 }
 
 export const GET: APIRoute = async ({ site }) => {
-  const origin = site?.toString() ?? 'https://leamington.city';
+  const origin = site?.toString() ?? SITE_URL;
   const now = new Date();
 
   const [businesses, offers, jobs] = await Promise.all([

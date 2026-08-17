@@ -33,6 +33,36 @@ import {
 const REGION = 'northamerica-northeast1';
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === '1';
 
+/**
+ * Firebase Web config for the `leamingtoncity` project.
+ *
+ * These are public identifiers — Google documents them as safe to ship in a
+ * client bundle, because access control is firestore.rules, not secrecy. They
+ * are inlined as defaults so a fresh clone runs with no `.env`; the environment
+ * wins when it is set, which is how a staging project gets pointed elsewhere.
+ */
+const FALLBACK_CONFIG = {
+  apiKey: 'AIzaSyAQgRAa8ECMyIkonsJhcNQWSz2fo-LTO0Y',
+  authDomain: 'leamingtoncity.firebaseapp.com',
+  projectId: 'leamingtoncity',
+  storageBucket: 'leamingtoncity.firebasestorage.app',
+  messagingSenderId: '909406298465',
+  appId: '1:909406298465:web:5a27d81ebd582246af6520',
+} as const;
+
+function config() {
+  const env = import.meta.env;
+  return {
+    apiKey: env.VITE_FIREBASE_API_KEY || FALLBACK_CONFIG.apiKey,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || FALLBACK_CONFIG.authDomain,
+    projectId: env.VITE_FIREBASE_PROJECT_ID || FALLBACK_CONFIG.projectId,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || FALLBACK_CONFIG.storageBucket,
+    messagingSenderId:
+      env.VITE_FIREBASE_MESSAGING_SENDER_ID || FALLBACK_CONFIG.messagingSenderId,
+    appId: env.VITE_FIREBASE_APP_ID || FALLBACK_CONFIG.appId,
+  };
+}
+
 let app: FirebaseApp | undefined;
 let authInstance: Auth | undefined;
 let dbInstance: Firestore | undefined;
@@ -40,16 +70,7 @@ let functionsInstance: Functions | undefined;
 
 function getApp(): FirebaseApp {
   if (app) return app;
-  app =
-    getApps()[0] ??
-    initializeApp({
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    });
+  app = getApps()[0] ?? initializeApp(config());
   return app;
 }
 

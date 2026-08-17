@@ -20,7 +20,9 @@
  *   phone, email, website, short_description_en, short_description_es,
  *   description_en, description_es, facebook, instagram, tags, lat, lng,
  *   hours_mon … hours_sun (e.g. "9:00-17:00", "11:00-14:00;17:00-21:00",
- *   "20:00-02:00" for past midnight, or "closed")
+ *   "20:00-02:00" for past midnight, or "closed"),
+ *   logo, hero, photos (semicolon-separated; any http(s) URL — Firebase
+ *   Storage, a CDN, the business's own site)
  */
 
 import { readFile } from 'node:fs/promises';
@@ -180,6 +182,31 @@ export function toCategory(raw: string): BusinessCategory {
   return 'other';
 }
 
+/**
+ * Image URL from a spreadsheet cell.
+ *
+ * Only http(s) is accepted, so a stray filename or a `javascript:` string never
+ * reaches an `<img src>`. A rejected cell simply leaves the field null, and the
+ * app falls back to its generated category cover.
+ */
+export function toImageUrl(raw: string): string | null {
+  const url = toUrl(raw);
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
+/** Semicolon- or pipe-separated gallery. Capped: this renders on a phone. */
+export function toImageList(raw: string, max = 6): string[] {
+  return [
+    ...new Set(
+      raw
+        .split(/[;|]/)
+        .map((entry) => toImageUrl(entry))
+        .filter((entry): entry is string => entry !== null),
+    ),
+  ].slice(0, max);
+}
+
 /** Adds a scheme so a bare `example.com` in a spreadsheet is still a usable link. */
 export function toUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -305,6 +332,9 @@ export interface ParsedRow {
   facebook: string | null;
   instagram: string | null;
   tags: string[];
+  logoUrl: string | null;
+  heroUrl: string | null;
+  photos: string[];
   hours: WeekHours | null;
   lat: number | null;
   lng: number | null;
@@ -337,6 +367,9 @@ export function parseRow(row: CsvRow): ParsedRow | null {
     facebook: toUrl(pickColumn(row, 'facebook', 'facebook_url')),
     instagram: toUrl(pickColumn(row, 'instagram', 'instagram_url')),
     tags: toTags(pickColumn(row, 'tags', 'keywords')),
+    logoUrl: toImageUrl(pickColumn(row, 'logo', 'logo_url')),
+    heroUrl: toImageUrl(pickColumn(row, 'hero', 'hero_url', 'image', 'photo')),
+    photos: toImageList(pickColumn(row, 'photos', 'gallery', 'images')),
     hours: parseWeekHours(row),
     // Leamington sits near 42.05 N, -82.6 W. The bounds reject swapped columns.
     lat: toCoordinate(pickColumn(row, 'lat', 'latitude'), 41, 43),
@@ -385,9 +418,9 @@ export function toBusiness(
       tiktok: null,
     },
     hours: parsed.hours,
-    logoUrl: null,
-    heroUrl: null,
-    photos: [],
+    logoUrl: parsed.logoUrl,
+    heroUrl: parsed.heroUrl,
+    photos: parsed.photos,
     tags: parsed.tags,
     counts: { offers: 0, jobs: 0 },
     rank: TIER_RANK.stub,
@@ -413,6 +446,9 @@ function refreshableFields(next: Business): Partial<Business> {
     socials: next.socials,
     tags: next.tags,
     hours: next.hours,
+    logoUrl: next.logoUrl,
+    heroUrl: next.heroUrl,
+    photos: next.photos,
     updatedAt: next.updatedAt,
   };
 }

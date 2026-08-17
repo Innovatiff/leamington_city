@@ -5,9 +5,11 @@ interface Props {
   photos: string[];
   name: string;
   locale: Locale;
+  /** Local artwork to swap in if a remote photo fails. */
+  fallback?: string | undefined;
 }
 
-const { photos, name, locale } = Astro.props;
+const { photos, name, locale, fallback } = Astro.props;
 ---
 
 {
@@ -24,6 +26,7 @@ const { photos, name, locale } = Astro.props;
           <li class="snap-start">
             <img
               src={photo}
+              data-fallback={fallback}
               alt={`${name} — ${index + 1}/${photos.length}`}
               width="280"
               height="200"

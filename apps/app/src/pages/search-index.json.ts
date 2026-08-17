@@ -10,6 +10,7 @@
 import type { APIRoute } from 'astro';
 import { categorySlug, truncate, pick } from '@leamington/shared';
 import { getBusinesses } from '../lib/content';
+import { businessCover, coverFallback } from '../lib/covers';
 import type { SearchEntry, SearchIndex } from '../lib/searchIndex';
 
 /** Descriptions here are for disambiguation in a list, not for reading. */
@@ -31,7 +32,10 @@ export const GET: APIRoute = async () => {
     t: business.tags,
     h: business.hours,
     w: Boolean(business.websiteUrl),
-    l: business.logoUrl,
+    // The cover, not the logo: most listings have no logo, and a results list
+    // of bare text reads as a database dump rather than a directory.
+    l: businessCover(business),
+    f: coverFallback(business),
   }));
 
   const index: SearchIndex = {

@@ -3,7 +3,8 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
-const site = process.env.PUBLIC_SITE_URL ?? 'https://leamington.city';
+// Swap PUBLIC_SITE_URL when the custom domain is live.
+const site = process.env.PUBLIC_SITE_URL ?? 'https://leamingtoncity.web.app';
 
 // Public pages are SEO-critical, so this build is fully static: every business,
 // offer and job page is rendered at build time with its JSON-LD and hreflang
@@ -21,6 +22,11 @@ export default defineConfig({
   },
   image: {
     // Business logos come from Firebase Storage.
-    domains: ['firebasestorage.googleapis.com', 'storage.googleapis.com'],
+    domains: [
+      'firebasestorage.googleapis.com',
+      'storage.googleapis.com',
+      // Seeded listing photography, see scripts/data/*.csv.
+      'images.unsplash.com',
+    ],
   },
 });

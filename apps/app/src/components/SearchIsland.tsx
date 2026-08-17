@@ -96,7 +96,7 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
 
   return (
     <div>
-      <div className="sticky top-14 z-30 -mx-4 border-b border-neutral-200 bg-white px-4 pb-3 pt-1">
+      <div className="sticky top-16 z-30 -mx-4 border-b border-ink-100 bg-white/95 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
         <label htmlFor="q" className="sr-only">
           {t('search.title')}
         </label>
@@ -110,14 +110,14 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
             placeholder={t('search.placeholder')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="min-h-[44px] w-full rounded-lg border border-neutral-300 px-3 py-2
-              text-base focus:border-brand-600 focus:outline-none"
+            className="min-h-12 w-full rounded-xl border border-ink-300 px-4 py-2.5
+              text-base text-ink-900 focus:border-brand-600 focus:outline-none"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="shrink-0 px-2 text-sm font-semibold text-neutral-600"
+              className="shrink-0 px-2 text-sm font-semibold text-ink-600"
             >
               {t('search.clear')}
             </button>
@@ -129,11 +129,7 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
             type="button"
             aria-pressed={openOnly}
             onClick={() => setOpenOnly((value) => !value)}
-            className={`min-h-[44px] shrink-0 rounded-full border px-4 text-sm font-semibold ${
-              openOnly
-                ? 'border-brand-600 bg-brand-600 text-white'
-                : 'border-neutral-300 bg-white text-neutral-700'
-            }`}
+            className={`chip ${openOnly ? 'chip-active' : ''}`}
           >
             {t('filter.openNow')}
           </button>
@@ -147,8 +143,7 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
             onChange={(event) =>
               setCategory(event.target.value as BusinessCategory | 'all')
             }
-            className="min-h-[44px] shrink-0 rounded-full border border-neutral-300 bg-white
-              px-3 text-sm font-semibold text-neutral-700"
+            className="chip"
           >
             <option value="all">{t('filter.allCategories')}</option>
             {availableCategories.map((value) => (
@@ -161,11 +156,11 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
       </div>
 
       <div className="mt-4" aria-live="polite">
-        {failed && <p className="text-neutral-600">{t('common.error')}</p>}
-        {!entries && !failed && <p className="text-neutral-600">{t('search.loading')}</p>}
+        {failed && <p className="text-ink-600">{t('common.error')}</p>}
+        {!entries && !failed && <p className="text-ink-600">{t('search.loading')}</p>}
 
         {entries && (
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-ink-600">
             {results.length === 1
               ? t('search.oneResult')
               : t('search.resultCount', { count: results.length })}
@@ -173,7 +168,7 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
         )}
 
         {entries && results.length === 0 && query.trim() && (
-          <p className="mt-6 text-neutral-600">{t('search.noResults', { query })}</p>
+          <p className="mt-6 text-ink-600">{t('search.noResults', { query })}</p>
         )}
 
         <ul className="mt-3 space-y-2">
@@ -181,22 +176,23 @@ export default function SearchIsland({ locale, indexUrl }: Props) {
             <li key={entry.s}>
               <a
                 href={localizedPath(locale, `/${entry.cs}/${entry.s}`)}
-                className="card flex items-center gap-3"
+                className="card card-interactive flex items-center gap-3 p-2.5"
               >
                 {entry.l && (
                   <img
                     src={entry.l}
+                    data-fallback={entry.f}
                     alt=""
-                    width="40"
-                    height="40"
+                    width="56"
+                    height="56"
                     loading="lazy"
                     decoding="async"
-                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
                   />
                 )}
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-neutral-900">{entry.n}</p>
-                  <p className="truncate text-sm text-neutral-600">
+                  <p className="truncate font-semibold text-ink-900">{entry.n}</p>
+                  <p className="truncate text-sm text-ink-600">
                     {entry.d[locale] || entry.a || categoryNames.get(entry.c)}
                   </p>
                 </div>

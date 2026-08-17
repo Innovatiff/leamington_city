@@ -5,6 +5,7 @@ import { translate, type Locale, type MessageKey } from '@leamington/shared';
 import { getBusinesses, getLiveOffers } from '../lib/content';
 import { offerJsonLd, serializeJsonLd } from '../lib/seo';
 import { ROUTES } from '../lib/routes';
+import { SITE_URL } from '../lib/site';
 
 interface Props {
   locale: Locale;
@@ -13,7 +14,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
-const site = Astro.site?.toString() ?? 'https://leamington.city';
+const site = Astro.site?.toString() ?? SITE_URL;
 
 const [offers, businesses] = await Promise.all([getLiveOffers(), getBusinesses()]);
 const categories = [...new Set(businesses.map((business) => business.category))];

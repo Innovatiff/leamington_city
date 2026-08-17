@@ -9,32 +9,20 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getFunctions, httpsCallable, type Functions } from 'firebase/functions';
 import { connectFunctionsEmulator } from 'firebase/functions';
 import type { ClickoutRequest, ClickoutResponse } from '@leamington/shared';
-
-const REGION = 'northamerica-northeast1';
-
-function config() {
-  return {
-    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
-  };
-}
+import { firebaseConfig, FUNCTIONS_REGION } from './site';
 
 let app: FirebaseApp | null = null;
 let functions: Functions | null = null;
 
 export function getFirebaseApp(): FirebaseApp {
   if (app) return app;
-  app = getApps()[0] ?? initializeApp(config());
+  app = getApps()[0] ?? initializeApp(firebaseConfig());
   return app;
 }
 
 export function getAppFunctions(): Functions {
   if (functions) return functions;
-  functions = getFunctions(getFirebaseApp(), REGION);
+  functions = getFunctions(getFirebaseApp(), FUNCTIONS_REGION);
   if (import.meta.env.PUBLIC_USE_EMULATORS === '1') {
     connectFunctionsEmulator(functions, '127.0.0.1', 5001);
   }

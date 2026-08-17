@@ -28,8 +28,10 @@ export interface SearchEntry {
   h: WeekHours | null;
   /** Whether the business has a website — drives the card's CTA hint. */
   w: boolean;
-  /** Logo URL, or null. */
+  /** Thumbnail: the business's photo when it has one, else generated art. */
   l: string | null;
+  /** Local artwork to swap in when `l` fails to load. */
+  f: string;
 }
 
 export interface SearchIndex {

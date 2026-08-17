@@ -13,6 +13,8 @@ export interface RailItem {
   name: string;
   href: string;
   cover: string;
+  /** Local artwork to swap in if `cover` fails to load. */
+  fallback: string;
   category: string;
   hours: WeekHours | null;
 }
@@ -81,6 +83,7 @@ export default function OpenNowRail({ locale, items, limit = 12 }: Props) {
             <div className="cover aspect-[16/10]">
               <img
                 src={item.cover}
+                data-fallback={item.fallback}
                 alt=""
                 width="320"
                 height="200"

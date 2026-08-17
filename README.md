@@ -31,16 +31,30 @@ cp .env.example .env      # fill in from the Firebase console
 pnpm build:shared         # apps import the built package, so build it first
 ```
 
-Point the workspace at your Firebase project in **one** place — the `default`
-entry in [`.firebaserc`](./.firebaserc). The CLI, emulators and deploys all
-follow from it. `.env` then carries the Web app config for the browser
-(`PUBLIC_*` for Astro, `VITE_*` for the two Vite apps — same values, two
-prefixes, because each bundler only exposes its own).
+This is wired to the **`leamingtoncity`** Firebase project. The project id lives
+in one place — the `default` entry in [`.firebaserc`](./.firebaserc) — and the
+CLI, emulators and deploys all follow from it.
 
-Firebase Hosting serves the portal and admin only, from sites named
-`leamington-city-portal` and `leamington-city-admin`. Create them under
-Hosting, or edit the `targets` block in `.firebaserc` to match yours. The
-public site is built and served by Netlify — see [Deploying](#deploying).
+The Web app config is compiled in as a default (`apps/app/src/lib/site.ts`, and
+the equivalent in each Vite app), so a fresh clone builds and runs with no
+`.env` at all. Anything in the environment wins, which is how you point a
+staging build somewhere else. Those values are public identifiers — Google
+documents them as safe to ship in a client bundle, because access control is
+`firestore.rules`, not secrecy. Restrict the browser key by HTTP referrer in the
+Google Cloud console anyway: public does not mean "fine for anyone to bill
+against your project".
+
+Analytics is **off** unless `PUBLIC_ENABLE_ANALYTICS=1`. See
+`apps/app/src/lib/analytics.ts` for the reasoning — briefly, a large share of
+this site's readers are newcomers and seasonal workers, and turning on
+behavioural tracking before there is a privacy notice on the site would be a
+decision made on their behalf. It is one variable away, and it still respects
+Global Privacy Control and Do Not Track.
+
+Firebase Hosting serves the portal and admin only, from two sites you need to
+create under Hosting: `leamingtoncity-portal` and `leamingtoncity-admin` (or
+edit the `targets` block in `.firebaserc` to match names you prefer). The public
+site is built and served by Netlify — see [Deploying](#deploying).
 
 ### URLs
 
@@ -72,11 +86,19 @@ the section links on a second.
 `packages/shared/src/i18n` is still the only source of user-facing strings; the
 design layer adds no hard-coded copy.
 
-Every business needs a picture, and most imported listings will never have one,
-so `apps/app/src/lib/covers.ts` falls back to a generated category scene chosen
-deterministically from the slug — the same business keeps the same picture
-across builds. Real photography always wins: set `heroUrl` or `photos` on a
-business and the generated cover is no longer used.
+Listing photography is **data, not code**. The seed CSV takes `hero`, `photos`
+(semicolon-separated) and `logo` columns holding any http(s) URL — the sample
+data points at Unsplash, and production would point at Firebase Storage or the
+businesses' own hosts.
+
+Because those URLs are remote, some will eventually rot. Every cover therefore
+carries a `data-fallback` pointing at local generated artwork, and one capturing
+`error` listener in `Base.astro` swaps a failed image for it. A dead URL degrades
+to the local art rather than to a broken-image icon.
+
+When a business has no photo at all — which is most imported listings —
+`apps/app/src/lib/covers.ts` picks a generated category scene deterministically
+from the slug, so the same business keeps the same picture across builds.
 
 The covers themselves are built by `scripts/generate-imagery.mjs`, which
 rasterises layered SVG scenes through Chromium into
@@ -97,10 +119,10 @@ pnpm seed -- --file scripts/data/leamington-businesses.sample.csv --emulator --c
 pnpm seed:demo -- --emulator --commit
 ```
 
-The sample CSV carries 30 Leamington businesses with hours, coordinates and
-bilingual copy; `seed:demo` adds 16 offers and 10 jobs on top. `seed:demo` is a
-development tool — it never touches a business an owner has claimed, and it is
-not part of the production import path.
+The sample CSV carries 30 Leamington businesses with hours, coordinates,
+bilingual copy and photography; `seed:demo` adds 16 offers and 10 jobs on top.
+`seed:demo` is a development tool — it never touches a business an owner has
+claimed, and it is not part of the production import path.
 
 ### Search and the Open Now filter
 

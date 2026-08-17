@@ -17,7 +17,7 @@ import {
 } from '@leamington/shared';
 import { getBusinesses, getLiveOffers, getOpenJobs } from '../lib/content';
 import { businessPath, categoryPath, ROUTES } from '../lib/routes';
-import { businessCover, categoryCover, HERO_COVER } from '../lib/covers';
+import { businessCover, categoryCover, coverFallback, HERO_COVER } from '../lib/covers';
 
 interface Props {
   locale: Locale;
@@ -57,6 +57,7 @@ const openCandidates = businesses.slice(0, 60).map((business) => ({
   name: business.name,
   href: businessPath(business, locale),
   cover: businessCover(business),
+  fallback: coverFallback(business),
   category: t(categoryMessageKey(business.category)),
   hours: business.hours,
 }));

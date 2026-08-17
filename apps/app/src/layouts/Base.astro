@@ -10,6 +10,7 @@ import {
   type Locale,
 } from '@leamington/shared';
 import { htmlLang } from '../lib/seo';
+import { SITE_URL } from '../lib/site';
 
 interface Props {
   locale: Locale;
@@ -44,7 +45,7 @@ const {
   bleed = false,
 } = Astro.props;
 
-const site = Astro.site?.toString() ?? 'https://leamington.city';
+const site = Astro.site?.toString() ?? SITE_URL;
 const other = alternateLocale(locale);
 const canonical = new URL(localizedPath(locale, path), site).toString();
 const alternateHref = new URL(localizedPath(other, path), site).toString();
@@ -87,8 +88,33 @@ const absoluteImage = image ? new URL(image, site).toString() : null;
     <meta name="theme-color" content="#a8341f" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-    {/* The map embed is the only third party a page talks to; warm it early. */}
+    {/* Listing photography and the map embed are the only third parties a page
+        talks to. Warm the image host early — it is on the critical path. */}
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://www.openstreetmap.org" />
+
+    {/*
+      Listing photography is remote, so some of it will eventually 404 — a
+      business changes host, a URL rots, a CDN blocks a referrer. One capturing
+      listener swaps any failed image for its generated category cover, so the
+      page degrades to the local artwork instead of showing a broken icon.
+      `error` does not bubble from <img>, hence the capture phase.
+    */}
+    <script is:inline>
+      document.addEventListener(
+        'error',
+        (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLImageElement)) return;
+          const fallback = target.dataset.fallback;
+          if (!fallback || target.src.endsWith(fallback)) return;
+          target.src = fallback;
+          target.removeAttribute('srcset');
+        },
+        true,
+      );
+    </script>
 
     {jsonLd.map((block) => <script type="application/ld+json" is:inline set:html={block} />)}
   </head>

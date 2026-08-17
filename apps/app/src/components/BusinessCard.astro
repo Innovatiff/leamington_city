@@ -10,7 +10,7 @@ import {
   type Locale,
 } from '@leamington/shared';
 import { businessPath } from '../lib/routes';
-import { businessCover } from '../lib/covers';
+import { businessCover, coverFallback } from '../lib/covers';
 
 interface Props {
   business: Business;
@@ -31,6 +31,7 @@ const summary = truncate(pick(business.shortDescription, locale), 96);
 const categoryName = translate(locale, categoryMessageKey(business.category));
 const href = businessPath(business, locale);
 const cover = businessCover(business);
+const fallback = coverFallback(business);
 ---
 
 {
@@ -40,6 +41,7 @@ const cover = businessCover(business);
         <div class="cover aspect-[16/10]">
           <img
             src={cover}
+            data-fallback={fallback}
             alt=""
             width="600"
             height="375"

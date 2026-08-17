@@ -14,6 +14,7 @@ import {
   type BusinessRef,
   type Locale,
 } from '@leamington/shared';
+import { PORTAL_URL } from './site';
 
 /** Enough of a business to address it. Works for full docs and denormalized refs. */
 export type Addressable = Pick<Business | BusinessRef, 'slug' | 'category'>;
@@ -43,8 +44,8 @@ export const ROUTES = {
   search: '/search',
   /** Static JSON consumed by the search island. Not locale-specific. */
   searchIndex: '/search-index.json',
-  /** The owner portal is a separate app on its own host. */
-  portal: 'https://portal.leamington.city',
+  /** The owner portal is a separate app on its own Firebase Hosting site. */
+  portal: PORTAL_URL,
 } as const;
 
 /** Where a "claim this listing" button points, for a given business. */

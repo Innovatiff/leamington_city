@@ -24,7 +24,8 @@ import {
 } from '@leamington/shared';
 import { businessJsonLd, offerJsonLd, serializeJsonLd } from '../lib/seo';
 import { businessPathBare, categoryPath, claimUrl } from '../lib/routes';
-import { businessCover, businessPhotos } from '../lib/covers';
+import { businessCover, businessPhotos, coverFallback } from '../lib/covers';
+import { SITE_URL } from '../lib/site';
 
 interface Props {
   locale: Locale;
@@ -48,9 +49,10 @@ const {
 const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
 
-const site = Astro.site?.toString() ?? 'https://leamington.city';
+const site = Astro.site?.toString() ?? SITE_URL;
 const categoryName = t(categoryMessageKey(business.category));
 const cover = businessCover(business);
+const coverFallbackSrc = coverFallback(business);
 
 const description =
   truncate(pick(business.shortDescription, locale), 160) ||
@@ -87,7 +89,15 @@ const fullAddress = [
   {/* ------------------------------------------------------------------ hero */}
   <section class="relative isolate">
     <div class="cover h-52 sm:h-72 lg:h-80">
-      <img src={cover} alt="" width="1200" height="500" fetchpriority="high" decoding="async" />
+      <img
+        src={cover}
+        data-fallback={coverFallbackSrc}
+        alt=""
+        width="1200"
+        height="500"
+        fetchpriority="high"
+        decoding="async"
+      />
     </div>
 
     <div class="shell relative -mt-16 sm:-mt-20">
@@ -193,6 +203,7 @@ const fullAddress = [
         photos={businessPhotos(business)}
         name={business.name}
         locale={locale}
+        fallback={coverFallbackSrc}
       />
 
       {
