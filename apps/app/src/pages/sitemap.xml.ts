@@ -7,8 +7,14 @@
  */
 
 import type { APIRoute } from 'astro';
-import { LOCALES, localizedPath, type Locale } from '@leamington/shared';
+import {
+  BUSINESS_CATEGORIES,
+  LOCALES,
+  localizedPath,
+  type Locale,
+} from '@leamington/shared';
 import { getBusinesses, getLiveOffers, getOpenJobs } from '../lib/content';
+import { businessPathBare, categoryPathBare, ROUTES } from '../lib/routes';
 
 interface Entry {
   path: string;
@@ -55,17 +61,33 @@ export const GET: APIRoute = async ({ site }) => {
     getOpenJobs(),
   ]);
 
+  const populatedCategories = new Set(businesses.map((business) => business.category));
+
   const entries: Entry[] = [
-    { path: '/', lastmod: now, changefreq: 'daily', priority: '1.0' },
-    { path: '/offers', lastmod: now, changefreq: 'daily', priority: '0.9' },
-    { path: '/jobs', lastmod: now, changefreq: 'daily', priority: '0.8' },
-    { path: '/businesses', lastmod: now, changefreq: 'weekly', priority: '0.8' },
-    ...businesses.map((business): Entry => ({
-      path: `/business/${business.slug}`,
-      lastmod: business.updatedAt,
-      changefreq: 'weekly',
-      priority: business.tier === 'stub' ? '0.4' : '0.7',
-    })),
+    { path: ROUTES.home, lastmod: now, changefreq: 'daily', priority: '1.0' },
+    { path: ROUTES.offers, lastmod: now, changefreq: 'daily', priority: '0.9' },
+    { path: ROUTES.jobs, lastmod: now, changefreq: 'daily', priority: '0.8' },
+    { path: ROUTES.directory, lastmod: now, changefreq: 'weekly', priority: '0.8' },
+
+    // Category indexes — only the ones that were actually generated.
+    ...BUSINESS_CATEGORIES.filter((category) => populatedCategories.has(category)).map(
+      (category): Entry => ({
+        path: categoryPathBare(category),
+        lastmod: now,
+        changefreq: 'weekly',
+        priority: '0.7',
+      }),
+    ),
+
+    ...businesses.map(
+      (business): Entry => ({
+        path: businessPathBare(business),
+        lastmod: business.updatedAt,
+        changefreq: 'weekly',
+        // A claimed listing is richer and worth more crawl budget than a stub.
+        priority: business.tier === 'stub' ? '0.4' : '0.7',
+      }),
+    ),
   ];
 
   // Offers and jobs live on pages already listed above; they only move lastmod.
@@ -75,17 +97,18 @@ export const GET: APIRoute = async ({ site }) => {
   );
   if (freshest.getTime() > 0) {
     for (const entry of entries) {
-      if (entry.path === '/offers' || entry.path === '/jobs') entry.lastmod = freshest;
+      if (entry.path === ROUTES.offers || entry.path === ROUTES.jobs) {
+        entry.lastmod = freshest;
+      }
     }
   }
 
+  // `/search` is deliberately absent: it is noindex.
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
     '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-    ...entries.flatMap((entry) =>
-      LOCALES.map((locale) => urlEntry(origin, entry, locale)),
-    ),
+    ...entries.flatMap((entry) => LOCALES.map((locale) => urlEntry(origin, entry, locale))),
     '</urlset>',
   ].join('\n');
 

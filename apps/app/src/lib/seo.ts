@@ -4,7 +4,8 @@
  */
 
 import type { Business, Job, Locale, Offer } from '@leamington/shared';
-import { INTL_LOCALES, formatPhone, pick } from '@leamington/shared';
+import { INTL_LOCALES, formatPhone, localizedPath, pick } from '@leamington/shared';
+import { businessPathBare, ROUTES } from './routes';
 
 /** BCP-47 tag for `<html lang>` and hreflang. */
 export function htmlLang(locale: Locale): string {
@@ -15,6 +16,15 @@ function absolute(site: string, path: string): string {
   return new URL(path, site).toString();
 }
 
+/** Canonical URL of a business page, in the given locale. */
+function businessUrl(
+  business: Pick<Business, 'slug' | 'category'>,
+  locale: Locale,
+  site: string,
+): string {
+  return absolute(site, localizedPath(locale, businessPathBare(business)));
+}
+
 export function businessJsonLd(
   business: Business,
   locale: Locale,
@@ -23,10 +33,10 @@ export function businessJsonLd(
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    '@id': absolute(site, `/${locale}/business/${business.slug}`),
+    '@id': businessUrl(business, locale, site),
     name: business.name,
     description: pick(business.shortDescription, locale),
-    url: business.websiteUrl ?? absolute(site, `/${locale}/business/${business.slug}`),
+    url: business.websiteUrl ?? businessUrl(business, locale, site),
     telephone: business.phone ? formatPhone(business.phone) : undefined,
     email: business.email ?? undefined,
     image: business.heroUrl ?? business.logoUrl ?? undefined,
@@ -67,13 +77,13 @@ export function offerJsonLd(
     '@type': 'Offer',
     name: pick(offer.title, locale),
     description: pick(offer.description, locale),
-    url: absolute(site, `/${locale}/business/${offer.business.slug}#offer-${offer.id}`),
+    url: `${businessUrl(offer.business, locale, site)}#offer-${offer.id}`,
     availabilityStarts: offer.startsAt.toISOString(),
     availabilityEnds: offer.endsAt.toISOString(),
     offeredBy: {
       '@type': 'LocalBusiness',
       name: offer.business.name,
-      '@id': absolute(site, `/${locale}/business/${offer.business.slug}`),
+      '@id': businessUrl(offer.business, locale, site),
     },
   };
 }
@@ -100,7 +110,7 @@ export function jobJsonLd(
     validThrough: job.expiresAt.toISOString(),
     employmentType: EMPLOYMENT_TYPE_LD[job.employmentType] ?? 'OTHER',
     directApply: Boolean(job.applyUrl),
-    url: absolute(site, `/${locale}/jobs#job-${job.id}`),
+    url: `${absolute(site, localizedPath(locale, ROUTES.jobs))}#job-${job.id}`,
     hiringOrganization: {
       '@type': 'Organization',
       name: job.business.name,

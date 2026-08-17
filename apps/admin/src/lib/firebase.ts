@@ -103,6 +103,14 @@ export function assignBusinessOwner(input: {
   )(input);
 }
 
+/** Fires the Netlify build hook now, bypassing the debounce. Admin-only. */
+export function rebuildSite(): Promise<{ data: { triggered: boolean } }> {
+  return httpsCallable<{ force?: boolean }, { triggered: boolean }>(
+    functions(),
+    'rebuildSite',
+  )({ force: true });
+}
+
 /** Forces a feed rebuild for a day. Admin-only, enforced server-side. */
 export function rebuildFeed(dayKey?: string): Promise<{ data: { items: number } }> {
   return httpsCallable<{ dayKey?: string }, { items: number }>(

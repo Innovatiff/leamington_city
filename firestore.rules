@@ -153,6 +153,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ------------------------------------------------------------------ system
+
+    // Internal bookkeeping — currently `system/build`, the dirty marker that
+    // coalesces Netlify rebuilds. Functions only, and never client-readable.
+    match /system/{document} {
+      allow read, write: if false;
+    }
+
     // Anything not matched above is denied.
     match /{document=**} {
       allow read, write: if false;

@@ -1,0 +1,46 @@
+---
+import { pick, truncate, type Business, type Locale } from '@leamington/shared';
+import { businessPath } from '../lib/routes';
+
+interface Props {
+  business: Business;
+  locale: Locale;
+}
+
+const { business, locale } = Astro.props;
+
+// `data-hours` is what OpenNowFilter reads. Serialising it per card keeps the
+// filter a pure DOM operation with no second fetch.
+const hoursAttr = business.hours ? JSON.stringify(business.hours) : undefined;
+const summary =
+  truncate(pick(business.shortDescription, locale), 80) || business.address.line1;
+---
+
+<li data-business-card data-hours={hoursAttr}>
+  <a href={businessPath(business, locale)} class="card flex items-center gap-3">
+    {
+      business.logoUrl && (
+        <img
+          src={business.logoUrl}
+          alt=""
+          width="48"
+          height="48"
+          loading="lazy"
+          decoding="async"
+          class="h-12 w-12 shrink-0 rounded-full object-cover"
+        />
+      )
+    }
+    <div class="min-w-0 flex-1">
+      <p class="truncate font-semibold text-neutral-900">{business.name}</p>
+      {summary && <p class="truncate text-sm text-neutral-600">{summary}</p>}
+    </div>
+    {
+      business.counts.offers > 0 && (
+        <span class="shrink-0 rounded-full bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
+          {business.counts.offers}
+        </span>
+      )
+    }
+  </a>
+</li>

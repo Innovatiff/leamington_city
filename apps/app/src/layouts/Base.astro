@@ -1,34 +1,57 @@
 ---
 import '../styles/global.css';
-import { alternateLocale, localizedPath, translate, type Locale } from '@leamington/shared';
+import {
+  alternateLocale,
+  localizedPath,
+  translate,
+  type Locale,
+  type MessageKey,
+} from '@leamington/shared';
 import { htmlLang } from '../lib/seo';
+import { ROUTES } from '../lib/routes';
 
 interface Props {
   locale: Locale;
   title: string;
   description: string;
-  /** Path without the locale prefix, e.g. `/business/erie-shore-diner`. */
+  /**
+   * Path without the locale prefix, e.g. `/restaurants/erie-shore-diner`.
+   * Both locale URLs are derived from it, which is what keeps the hreflang
+   * pair self-consistent on every page.
+   */
   path: string;
   image?: string | null;
   jsonLd?: string[];
   noindex?: boolean;
+  ogType?: 'website' | 'article' | 'business.business';
 }
 
-const { locale, title, description, path, image = null, jsonLd = [], noindex = false } =
-  Astro.props;
+const {
+  locale,
+  title,
+  description,
+  path,
+  image = null,
+  jsonLd = [],
+  noindex = false,
+  ogType = 'website',
+} = Astro.props;
 
 const site = Astro.site?.toString() ?? 'https://leamington.city';
 const other = alternateLocale(locale);
 const canonical = new URL(localizedPath(locale, path), site).toString();
 const alternateHref = new URL(localizedPath(other, path), site).toString();
-const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+const xDefault = new URL(localizedPath('en', path), site).toString();
+const absoluteImage = image ? new URL(image, site).toString() : null;
+const t = (key: MessageKey) => translate(locale, key);
 
-const nav = [
-  { href: '/', key: 'nav.feed' },
-  { href: '/offers', key: 'nav.offers' },
-  { href: '/jobs', key: 'nav.jobs' },
-  { href: '/businesses', key: 'nav.directory' },
-] as const;
+const nav: readonly { href: string; key: MessageKey }[] = [
+  { href: ROUTES.home, key: 'nav.feed' },
+  { href: ROUTES.directory, key: 'nav.directory' },
+  { href: ROUTES.search, key: 'nav.search' },
+  { href: ROUTES.offers, key: 'nav.offers' },
+  { href: ROUTES.jobs, key: 'nav.jobs' },
+];
 ---
 
 <!doctype html>
@@ -43,30 +66,32 @@ const nav = [
     {/* Both languages are equal citizens; x-default points at English. */}
     <link rel="alternate" hreflang={locale} href={canonical} />
     <link rel="alternate" hreflang={other} href={alternateHref} />
-    <link
-      rel="alternate"
-      hreflang="x-default"
-      href={new URL(localizedPath('en', path), site).toString()}
-    />
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
 
     {noindex && <meta name="robots" content="noindex" />}
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Leamington" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={htmlLang(locale).replace('-', '_')} />
-    {image && <meta property="og:image" content={image} />}
-    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+    <meta property="og:locale:alternate" content={htmlLang(other).replace('-', '_')} />
+    {absoluteImage && <meta property="og:image" content={absoluteImage} />}
+    {absoluteImage && <meta property="og:image:alt" content={title} />}
+
+    <meta name="twitter:card" content={absoluteImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {absoluteImage && <meta name="twitter:image" content={absoluteImage} />}
 
     <meta name="theme-color" content="#b23b2f" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-    {
-      jsonLd.map((block) => (
-        <script type="application/ld+json" is:inline set:html={block} />
-      ))
-    }
+    {/* The map embed is the only third party a page talks to; warm it early. */}
+    <link rel="dns-prefetch" href="https://www.openstreetmap.org" />
+
+    {jsonLd.map((block) => <script type="application/ld+json" is:inline set:html={block} />)}
   </head>
 
   <body class="flex min-h-dvh flex-col">
@@ -79,11 +104,11 @@ const nav = [
 
     <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur">
       <div class="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2">
-        <a href={localizedPath(locale, '/')} class="flex font-bold text-brand-600">
+        <a href={localizedPath(locale, ROUTES.home)} class="flex font-bold text-brand-600">
           Leamington
         </a>
         <a
-          href={new URL(localizedPath(other, path), site).pathname}
+          href={localizedPath(other, path)}
           class="flex rounded-lg px-3 py-2 text-sm font-semibold text-neutral-700"
           hreflang={other}
           rel="alternate"
@@ -105,7 +130,7 @@ const nav = [
         {
           nav.map((item) => {
             const href = localizedPath(locale, item.href);
-            const current = Astro.url.pathname === href;
+            const current = Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
             return (
               <li class="flex-1">
                 <a

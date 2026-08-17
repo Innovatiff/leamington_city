@@ -80,14 +80,45 @@ function hoursInterval(value: unknown): HoursInterval | null {
   return { open, close };
 }
 
+/**
+ * Decodes opening hours.
+ *
+ * The model is a 7-tuple of interval arrays, but Firestore **forbids nested
+ * arrays**, so the wire format is a map keyed by weekday: `{ '0': [...], ... }`.
+ * The array form is still accepted on read because it is what a JSON export or
+ * a hand-written fixture naturally looks like.
+ */
 export function weekHours(value: unknown): WeekHours | null {
-  if (!Array.isArray(value) || value.length !== 7) return null;
-  const days = value.map((day) =>
+  const readDay = (day: unknown): HoursInterval[] =>
     Array.isArray(day)
       ? day.map(hoursInterval).filter((entry): entry is HoursInterval => entry !== null)
-      : [],
-  );
-  return days as WeekHours;
+      : [];
+
+  if (Array.isArray(value)) {
+    if (value.length !== 7) return null;
+    return value.map(readDay) as WeekHours;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const map = toMap(value);
+    // A map with none of the seven keys is not an hours map, it is noise.
+    if (!Object.keys(map).some((key) => /^[0-6]$/.test(key))) return null;
+    return Array.from({ length: 7 }, (_unused, day) => readDay(map[String(day)])) as WeekHours;
+  }
+
+  return null;
+}
+
+/** Encodes to the map form Firestore accepts. See {@link weekHours}. */
+export function encodeWeekHours(hours: WeekHours): DocumentDataLike {
+  const encoded: DocumentDataLike = {};
+  hours.forEach((intervals, day) => {
+    encoded[String(day)] = intervals.map((interval) => ({
+      open: interval.open,
+      close: interval.close,
+    }));
+  });
+  return encoded;
 }
 
 export function money(value: unknown): Money | null {

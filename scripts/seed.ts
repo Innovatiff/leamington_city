@@ -18,7 +18,9 @@
  * Expected columns (case- and separator-insensitive; all but `name` optional):
  *   name, category, address_line1, address_line2, city, province, postal_code,
  *   phone, email, website, short_description_en, short_description_es,
- *   description_en, description_es, facebook, instagram, tags, lat, lng
+ *   description_en, description_es, facebook, instagram, tags, lat, lng,
+ *   hours_mon … hours_sun (e.g. "9:00-17:00", "11:00-14:00;17:00-21:00",
+ *   "20:00-02:00" for past midnight, or "closed")
  */
 
 import { readFile } from 'node:fs/promises';
@@ -37,6 +39,8 @@ import {
   uniqueSlug,
   type Business,
   type BusinessCategory,
+  type HoursInterval,
+  type WeekHours,
 } from '@leamington/shared';
 import { parseCsvRows, pickColumn, type CsvRow } from './csv.ts';
 
@@ -214,6 +218,56 @@ function toCoordinate(raw: string, min: number, max: number): number | null {
   return value >= min && value <= max ? value : null;
 }
 
+/**
+ * Parses one day's opening hours.
+ *
+ * Accepts `9:00-17:00`, `09:00 - 17:00`, `9-17`, several ranges separated by
+ * `,` or `;`, and the words `closed` / `cerrado` (or an empty cell) for a day
+ * with no hours. A range whose end is at or before its start is kept as-is —
+ * `20:00-02:00` is a real thing here and `openStateAt` reads it as spanning
+ * midnight.
+ */
+export function parseDayHours(raw: string): HoursInterval[] {
+  const value = raw.trim().toLowerCase();
+  if (!value || value === 'closed' || value === 'cerrado' || value === '-') return [];
+
+  const intervals: HoursInterval[] = [];
+  for (const part of value.split(/[;,]/)) {
+    const match = /^\s*(\d{1,2})(?::(\d{2}))?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*$/.exec(part);
+    if (!match) continue;
+
+    const open = Number(match[1]) * 60 + Number(match[2] ?? 0);
+    const close = Number(match[3]) * 60 + Number(match[4] ?? 0);
+    // Reject nonsense rather than storing hours that would render as garbage.
+    if (open >= 1440 || close >= 1440) continue;
+    intervals.push({ open, close });
+  }
+
+  return intervals.sort((a, b) => a.open - b.open);
+}
+
+const HOURS_COLUMNS: readonly (readonly string[])[] = [
+  ['hours_sun', 'sunday', 'sun'],
+  ['hours_mon', 'monday', 'mon'],
+  ['hours_tue', 'tuesday', 'tue'],
+  ['hours_wed', 'wednesday', 'wed'],
+  ['hours_thu', 'thursday', 'thu'],
+  ['hours_fri', 'friday', 'fri'],
+  ['hours_sat', 'saturday', 'sat'],
+];
+
+/** `null` when the export carries no hours at all — distinct from "closed all week". */
+function parseWeekHours(row: CsvRow): WeekHours | null {
+  const present = HOURS_COLUMNS.some(
+    (names) => pickColumn(row, ...names).trim().length > 0,
+  );
+  if (!present) return null;
+
+  return HOURS_COLUMNS.map((names) =>
+    parseDayHours(pickColumn(row, ...names)),
+  ) as WeekHours;
+}
+
 function toTags(raw: string): string[] {
   return [
     ...new Set(
@@ -251,6 +305,7 @@ export interface ParsedRow {
   facebook: string | null;
   instagram: string | null;
   tags: string[];
+  hours: WeekHours | null;
   lat: number | null;
   lng: number | null;
 }
@@ -282,6 +337,7 @@ export function parseRow(row: CsvRow): ParsedRow | null {
     facebook: toUrl(pickColumn(row, 'facebook', 'facebook_url')),
     instagram: toUrl(pickColumn(row, 'instagram', 'instagram_url')),
     tags: toTags(pickColumn(row, 'tags', 'keywords')),
+    hours: parseWeekHours(row),
     // Leamington sits near 42.05 N, -82.6 W. The bounds reject swapped columns.
     lat: toCoordinate(pickColumn(row, 'lat', 'latitude'), 41, 43),
     lng: toCoordinate(pickColumn(row, 'lng', 'lon', 'longitude'), -84, -81),
@@ -328,7 +384,7 @@ export function toBusiness(
       x: null,
       tiktok: null,
     },
-    hours: null,
+    hours: parsed.hours,
     logoUrl: null,
     heroUrl: null,
     photos: [],
@@ -356,6 +412,7 @@ function refreshableFields(next: Business): Partial<Business> {
     websiteUrl: next.websiteUrl,
     socials: next.socials,
     tags: next.tags,
+    hours: next.hours,
     updatedAt: next.updatedAt,
   };
 }

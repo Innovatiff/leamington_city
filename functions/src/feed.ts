@@ -12,6 +12,7 @@ import { logger } from 'firebase-functions';
 import {
   MAX_FEED_ITEMS,
   TIME_ZONE,
+  categorySlug,
   toDayKey,
   toWeekday,
   truncate,
@@ -48,8 +49,9 @@ function offerToItem(offer: Offer, now: Date): FeedItem {
       es: truncate(offer.business.name, 60),
     },
     imageUrl: offer.imageUrl ?? offer.business.logoUrl,
-    // In-app route. The outbound hop happens through recordClickout.
-    href: `/business/${offer.business.slug}#offer-${offer.id}`,
+    // In-app route, locale-agnostic: the app prefixes it per locale. Business
+    // pages live under their category, so the ref's category is part of the URL.
+    href: `/${categorySlug(offer.business.category)}/${offer.business.slug}#offer-${offer.id}`,
     endsAt: offer.endsAt,
   };
 }

@@ -14,3 +14,10 @@ export { sendDailyPush } from './push.js';
 export { runHousekeeping } from './expiry.js';
 export { assignBusinessOwner } from './claims.js';
 export { onBusinessWritten, onOfferWritten, onJobWritten } from './denormalize.js';
+export {
+  onBusinessChangedRebuild,
+  onOfferChangedRebuild,
+  onJobChangedRebuild,
+  rebuildSiteIfDirty,
+  rebuildSite,
+} from './netlify.js';

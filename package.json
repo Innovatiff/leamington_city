@@ -18,7 +18,8 @@
     "seed": "pnpm --filter @leamington/scripts seed",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "deploy:functions": "pnpm --filter @leamington/functions build && firebase deploy --only functions",
-    "deploy:hosting": "pnpm build && firebase deploy --only hosting"
+    "deploy:hosting": "pnpm --filter @leamington/portal build && pnpm --filter @leamington/admin build && firebase deploy --only hosting",
+    "build:app": "pnpm build:shared && pnpm --filter @leamington/app build"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

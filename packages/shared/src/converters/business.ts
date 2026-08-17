@@ -37,7 +37,9 @@ export const businessCodec: Codec<Business> = {
       email: model.email,
       websiteUrl: model.websiteUrl,
       socials: optionalCopy(model.socials),
-      hours: model.hours,
+      // Map form, not the model's array-of-arrays: Firestore rejects nested
+      // arrays outright. See fields.weekHours.
+      hours: optional(model.hours, f.encodeWeekHours),
       logoUrl: model.logoUrl,
       heroUrl: model.heroUrl,
       photos: model.photos,

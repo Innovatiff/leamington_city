@@ -1,0 +1,26 @@
+---
+import CategoryView from '../../../views/CategoryView.astro';
+import { categorySlug, type Business, type BusinessCategory } from '@leamington/shared';
+import { getBusinessesByCategory } from '../../../lib/content';
+
+/**
+ * One index per category that actually has businesses. Generating empty
+ * category pages would be thin content on an SEO-critical surface.
+ */
+export async function getStaticPaths() {
+  const grouped = await getBusinessesByCategory();
+  return [...grouped.entries()]
+    .filter(([, businesses]) => businesses.length > 0)
+    .map(([category, businesses]) => ({
+      params: { category: categorySlug(category) },
+      props: { category, businesses },
+    }));
+}
+
+const { category, businesses } = Astro.props as {
+  category: BusinessCategory;
+  businesses: Business[];
+};
+---
+
+<CategoryView locale="es" category={category} businesses={businesses} />

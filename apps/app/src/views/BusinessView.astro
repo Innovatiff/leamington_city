@@ -1,50 +1,42 @@
 ---
-import Base from '../../../layouts/Base.astro';
-import OfferCard from '../../../components/OfferCard.astro';
-import ClickoutLink from '../../../components/ClickoutLink';
+import Base from '../layouts/Base.astro';
+import OfferCard from '../components/OfferCard.astro';
+import MapEmbed from '../components/MapEmbed.astro';
+import PhotoGallery from '../components/PhotoGallery.astro';
+import ClickoutLink from '../components/ClickoutLink';
+import OpenNowBadge from '../components/OpenNowBadge';
 import {
-  LOCALES,
+  categoryMessageKey,
   formatPhone,
   formatTimeOfDay,
   pick,
   translate,
   truncate,
+  INTL_LOCALES,
   type Business,
   type Locale,
+  type MessageKey,
   type Offer,
 } from '@leamington/shared';
-import { getBusinesses, getLiveOffers } from '../../../lib/content';
-import { businessJsonLd, offerJsonLd, serializeJsonLd } from '../../../lib/seo';
+import { businessJsonLd, offerJsonLd, serializeJsonLd } from '../lib/seo';
+import { businessPathBare, categoryPath } from '../lib/routes';
 
-export async function getStaticPaths() {
-  const [businesses, offers] = await Promise.all([getBusinesses(), getLiveOffers()]);
-
-  // Group offers once here rather than querying per page.
-  const offersByBusiness = new Map<string, Offer[]>();
-  for (const offer of offers) {
-    const bucket = offersByBusiness.get(offer.businessId) ?? [];
-    bucket.push(offer);
-    offersByBusiness.set(offer.businessId, bucket);
-  }
-
-  return LOCALES.flatMap((lang) =>
-    businesses.map((business) => ({
-      params: { lang, slug: business.slug },
-      props: { business, offers: offersByBusiness.get(business.id) ?? [] },
-    })),
-  );
+interface Props {
+  locale: Locale;
+  business: Business;
+  offers: Offer[];
 }
 
-const locale = Astro.params.lang as Locale;
-// Typed from getStaticPaths' props above.
-const { business, offers } = Astro.props as { business: Business; offers: Offer[] };
-const t = (key: Parameters<typeof translate>[1], params?: Record<string, string | number>) =>
+const { locale, business, offers } = Astro.props;
+const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
 
 const site = Astro.site?.toString() ?? 'https://leamington.city';
+const categoryName = t(categoryMessageKey(business.category));
+
 const description =
   truncate(pick(business.shortDescription, locale), 160) ||
-  `${business.name}, ${business.address.city}, ${business.address.province}`;
+  `${business.name} — ${categoryName}, ${business.address.city}, ${business.address.province}`;
 
 const jsonLd = [
   serializeJsonLd(businessJsonLd(business, locale, site)),
@@ -52,26 +44,26 @@ const jsonLd = [
 ];
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
-const weekdayNames = new Intl.DateTimeFormat(locale === 'es' ? 'es-419' : 'en-CA', {
-  weekday: 'long',
-});
-const mapsUrl = business.geo
-  ? `https://www.google.com/maps/search/?api=1&query=${business.geo.lat},${business.geo.lng}`
-  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${business.name} ${business.address.line1} ${business.address.city}`,
-    )}`;
+const weekdayNames = new Intl.DateTimeFormat(INTL_LOCALES[locale], { weekday: 'long' });
 ---
 
 <Base
   locale={locale}
-  path={`/business/${business.slug}`}
-  title={`${business.name} · Leamington`}
+  path={businessPathBare(business)}
+  title={`${business.name} · ${categoryName} · Leamington`}
   description={description}
   image={business.heroUrl ?? business.logoUrl}
   jsonLd={jsonLd}
+  ogType="business.business"
 >
   <article>
-    <header class="flex items-start gap-3">
+    <nav class="text-sm">
+      <a href={categoryPath(business.category, locale)} class="text-brand-600 underline">
+        {t('business.backToCategory', { category: categoryName })}
+      </a>
+    </nav>
+
+    <header class="mt-3 flex items-start gap-3">
       {
         business.logoUrl && (
           <img
@@ -87,12 +79,14 @@ const mapsUrl = business.geo
       <div class="min-w-0">
         <h1 class="text-2xl font-bold text-neutral-900">{business.name}</h1>
         <p class="text-sm text-neutral-600">
-          {business.address.line1}
-          {business.address.line2 ? `, ${business.address.line2}` : ''}
+          {business.address.line1}{business.address.line2 ? `, ${business.address.line2}` : ''}
           <br />
           {business.address.city}, {business.address.province}
           {business.address.postalCode ? ` ${business.address.postalCode}` : ''}
         </p>
+        {/* client:load, not client:visible — this sits above the fold and is
+            the single most useful fact on the page. */}
+        <OpenNowBadge client:load hours={business.hours} locale={locale} className="mt-1" />
       </div>
     </header>
 
@@ -105,6 +99,8 @@ const mapsUrl = business.geo
     <div class="mt-5 grid gap-2">
       {
         business.websiteUrl ? (
+          /* The primary CTA. Every tap is recorded to /clickouts by a Cloud
+             Function before the browser leaves. */
           <ClickoutLink
             client:visible
             targetType="business"
@@ -114,6 +110,16 @@ const mapsUrl = business.geo
             source="detail"
             label={t('business.visitWebsite')}
           />
+        ) : business.tier === 'stub' ? (
+          /* No website and nobody has claimed it: the useful action is to ask
+             the owner to take it over. */
+          <a
+            href={`https://portal.leamington.city/claim?business=${business.id}`}
+            class="btn-primary w-full"
+            rel="noopener"
+          >
+            {t('business.claimCta')}
+          </a>
         ) : (
           <p class="rounded-lg bg-neutral-50 p-3 text-center text-sm text-neutral-500">
             {t('business.noWebsite')}
@@ -128,11 +134,9 @@ const mapsUrl = business.geo
           </a>
         )
       }
-
-      <a href={mapsUrl} rel="noopener noreferrer" target="_blank" class="btn-secondary">
-        {t('business.directions')}
-      </a>
     </div>
+
+    <PhotoGallery photos={business.photos} name={business.name} locale={locale} />
 
     {
       business.hours && (
@@ -167,6 +171,8 @@ const mapsUrl = business.geo
       )
     }
 
+    <MapEmbed business={business} locale={locale} />
+
     {
       offers.length > 0 && (
         <section class="mt-6">
@@ -188,6 +194,7 @@ const mapsUrl = business.geo
           <a
             href={`https://portal.leamington.city/claim?business=${business.id}`}
             class="btn-secondary mt-2 w-full"
+            rel="noopener"
           >
             {t('business.claimCta')}
           </a>

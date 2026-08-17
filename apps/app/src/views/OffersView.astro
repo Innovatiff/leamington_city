@@ -1,23 +1,24 @@
 ---
-import Base from '../../layouts/Base.astro';
-import OfferCard from '../../components/OfferCard.astro';
-import { LOCALES, translate, type Locale } from '@leamington/shared';
-import { getLiveOffers } from '../../lib/content';
-import { offerJsonLd, serializeJsonLd } from '../../lib/seo';
+import Base from '../layouts/Base.astro';
+import OfferCard from '../components/OfferCard.astro';
+import { translate, type Locale, type MessageKey } from '@leamington/shared';
+import { getLiveOffers } from '../lib/content';
+import { offerJsonLd, serializeJsonLd } from '../lib/seo';
+import { ROUTES } from '../lib/routes';
 
-export function getStaticPaths() {
-  return LOCALES.map((lang) => ({ params: { lang } }));
+interface Props {
+  locale: Locale;
 }
 
-const locale = Astro.params.lang as Locale;
-const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+const { locale } = Astro.props;
+const t = (key: MessageKey) => translate(locale, key);
 const site = Astro.site?.toString() ?? 'https://leamington.city';
 const offers = await getLiveOffers();
 ---
 
 <Base
   locale={locale}
-  path="/offers"
+  path={ROUTES.offers}
   title={`${t('offer.title')} · Leamington`}
   description={t('feed.subtitle')}
   jsonLd={offers.slice(0, 20).map((offer) => serializeJsonLd(offerJsonLd(offer, locale, site)))}

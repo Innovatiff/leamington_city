@@ -48,15 +48,25 @@ export function alternateLocale(locale: Locale): Locale {
   return locale === 'en' ? 'es' : 'en';
 }
 
-/** First path segment, e.g. `/es/offers` → `es`. Falls back to English. */
+/**
+ * English is served unprefixed and Spanish under `/es/`.
+ *
+ * The public URLs are `/{category}/{slug}` and `/es/{category}/{slug}`, so the
+ * default locale owns the root. Only non-default locales take a prefix.
+ */
 export function localeFromPath(pathname: string): Locale {
   const segment = pathname.split('/').filter(Boolean)[0];
-  return isLocale(segment) ? segment : DEFAULT_LOCALE;
+  return isLocale(segment) && segment !== DEFAULT_LOCALE ? segment : DEFAULT_LOCALE;
 }
 
-/** Locale-prefixed route. `localizedPath('es', '/offers')` → `/es/offers`. */
+/**
+ * Locale-prefixed route.
+ * `localizedPath('es', '/offers')` → `/es/offers`;
+ * `localizedPath('en', '/offers')` → `/offers`.
+ */
 export function localizedPath(locale: Locale, path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (locale === DEFAULT_LOCALE) return normalized;
   return `/${locale}${normalized === '/' ? '' : normalized}`;
 }
 

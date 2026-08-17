@@ -12,7 +12,7 @@ individual client websites, and the app links out via `websiteUrl`. See
 
 | Path | What it is |
 | --- | --- |
-| `apps/app` | Astro 5 public site. Static, React islands, Tailwind 4. |
+| `apps/app` | Astro 5 public site. Static, React islands, Tailwind 4. Deployed to Netlify. |
 | `apps/portal` | Vite + React business-owner portal. |
 | `apps/admin` | Vite + React internal admin. |
 | `packages/shared` | Types, Firestore converters, i18n. The only place types live. |
@@ -37,9 +37,47 @@ follow from it. `.env` then carries the Web app config for the browser
 (`PUBLIC_*` for Astro, `VITE_*` for the two Vite apps — same values, two
 prefixes, because each bundler only exposes its own).
 
-Hosting targets assume three sites named `leamington-city`,
+Firebase Hosting serves the portal and admin only, from sites named
 `leamington-city-portal` and `leamington-city-admin`. Create them under
-Hosting, or edit the `targets` block in `.firebaserc` to match yours.
+Hosting, or edit the `targets` block in `.firebaserc` to match yours. The
+public site is built and served by Netlify — see [Deploying](#deploying).
+
+### URLs
+
+English is unprefixed and Spanish sits under `/es/`:
+
+| | English | Spanish |
+| --- | --- | --- |
+| Today's feed | `/` | `/es` |
+| Directory | `/businesses` | `/es/businesses` |
+| Category | `/restaurants` | `/es/restaurants` |
+| Business | `/restaurants/erie-shore-diner` | `/es/restaurants/erie-shore-diner` |
+| Search | `/search` | `/es/search` |
+
+A business page's URL contains its category, so nothing builds one from a slug
+alone — use `businessPath()` from `apps/app/src/lib/routes.ts`. Category URL
+segments are fixed in `packages/shared/src/categories.ts` and are **not**
+translated; only their display names are.
+
+`/search` is `noindex`: its results are built client-side, so there is nothing
+there for a crawler. The category pages are the indexable surface, and each one
+is fully server-rendered with `ItemList` JSON-LD.
+
+### Search and the Open Now filter
+
+`/search-index.json` is generated at build time from Firestore and is the only
+thing the search island fetches — searching costs zero Firestore reads no
+matter how heavily it is used. It carries each business's opening hours, which
+is what lets the Open Now filter work offline of any API.
+
+Open/closed is evaluated by `openStateAt()` in `packages/shared/src/hours.ts`
+from a `(weekday, minutes)` pair in `America/Toronto`, so the answer is correct
+on a phone whose clock is set to another zone. Intervals where `close <= open`
+span midnight — a kitchen open `20:00-02:00` is one interval, not two.
+
+On category and directory pages the filter hides already-rendered cards rather
+than owning the list, so the server-rendered markup stays complete for crawlers
+and for anyone without JavaScript.
 
 ### Develop
 
@@ -86,9 +124,14 @@ GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
 Columns are matched case- and separator-insensitively, and only `name` is
 required: `name, category, address_line1, address_line2, city, province,
 postal_code, phone, email, website, short_description_en/es,
-description_en/es, facebook, instagram, tags, lat, lng`. Free-text categories
-are mapped onto the controlled vocabulary in `packages/shared`
-(`"Restaurant - Full Service"` → `restaurant`).
+description_en/es, facebook, instagram, tags, lat, lng, hours_mon … hours_sun`.
+Free-text categories are mapped onto the controlled vocabulary in
+`packages/shared` (`"Restaurant - Full Service"` → `restaurant`).
+
+Hours accept `9:00-17:00`, `9-17`, several ranges in one cell
+(`8:00-12:00;13:00-17:00`), `20:00-02:00` for past midnight, and `closed` (or
+an empty cell). Leaving every hours column blank stores `null`, which the app
+renders as "Hours not listed" rather than guessing.
 
 Three properties worth relying on:
 
@@ -122,11 +165,45 @@ Custom claims are minted by the `assignBusinessOwner` callable
 
 ## Deploying
 
+The public site goes to **Netlify**; the portal and admin stay on **Firebase
+Hosting**.
+
 ```bash
 pnpm deploy:rules       # firestore rules + indexes + storage rules
 pnpm deploy:functions
-pnpm deploy:hosting
+pnpm deploy:hosting     # portal + admin only
 ```
 
 Deploy rules before functions on a first run — several triggers assume the
 indexes in `firestore.indexes.json` exist.
+
+### Netlify
+
+`netlify.toml` at the repo root builds `apps/app`. Netlify needs credentials to
+read Firestore during the build; set these as site environment variables:
+
+- `GOOGLE_CLOUD_PROJECT` and `GOOGLE_APPLICATION_CREDENTIALS` (or write the
+  service-account JSON out in a prebuild step)
+- `PUBLIC_SITE_URL` — required for correct canonical and hreflang tags
+- `PUBLIC_FIREBASE_*` — web config used by the client islands
+
+Without credentials the build still succeeds with an empty dataset and says so,
+so a misconfigured deploy is loud rather than silently blank.
+
+### Rebuilding on data change
+
+The site is static, so a business edit is invisible until it rebuilds. Create a
+build hook in Netlify (Site settings → Build hooks) and store it as a secret:
+
+```bash
+firebase functions:secrets:set NETLIFY_BUILD_HOOK_URL
+```
+
+Firestore triggers on `businesses`, `offers` and `jobs` only mark the site
+dirty in `system/build`; `rebuildSiteIfDirty` runs every five minutes and fires
+the hook at most once per ten. That matters: firing the hook straight from a
+trigger would queue one build per document, so a single seed run of 400
+businesses would cost 400 builds instead of one.
+
+Admins can force a publish immediately with the "Publish site now" button in
+the admin app, which calls the `rebuildSite` callable.

@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchIsland from '../components/SearchIsland';
+import { translate, type Locale, type MessageKey } from '@leamington/shared';
+import { ROUTES } from '../lib/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = (key: MessageKey) => translate(locale, key);
+
+// Results are built client-side from the static index, so there is nothing
+// server-rendered here for a crawler to index. The category pages are the
+// indexable surface; this page is a tool, and it says so with noindex.
+---
+
+<Base
+  locale={locale}
+  path={ROUTES.search}
+  title={`${t('search.title')} · Leamington`}
+  description={t('search.placeholder')}
+  noindex={true}
+>
+  <h1 class="text-2xl font-bold text-neutral-900">{t('search.title')}</h1>
+
+  {/* client:load: someone who navigated to /search is about to type. */}
+  <SearchIsland client:load locale={locale} indexUrl={ROUTES.searchIndex} />
+
+  <noscript>
+    <p class="mt-4 text-neutral-700">{t('search.startTyping')}</p>
+    <a href={ROUTES.directory} class="btn-secondary mt-3 w-full">{t('nav.directory')}</a>
+  </noscript>
+</Base>

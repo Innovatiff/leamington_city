@@ -1,0 +1,35 @@
+---
+import BusinessView from '../../views/BusinessView.astro';
+import {
+  categorySlug,
+  type Business,
+  type Offer,
+} from '@leamington/shared';
+import { getBusinesses, getLiveOffers } from '../../lib/content';
+
+/**
+ * A page per business at `/{category}/{slug}`.
+ *
+ * Offers are grouped once here rather than queried per page — with a few
+ * hundred businesses that is the difference between two reads and hundreds.
+ */
+export async function getStaticPaths() {
+  const [businesses, offers] = await Promise.all([getBusinesses(), getLiveOffers()]);
+
+  const offersByBusiness = new Map<string, Offer[]>();
+  for (const offer of offers) {
+    const bucket = offersByBusiness.get(offer.businessId) ?? [];
+    bucket.push(offer);
+    offersByBusiness.set(offer.businessId, bucket);
+  }
+
+  return businesses.map((business) => ({
+    params: { category: categorySlug(business.category), slug: business.slug },
+    props: { business, offers: offersByBusiness.get(business.id) ?? [] },
+  }));
+}
+
+const { business, offers } = Astro.props as { business: Business; offers: Offer[] };
+---
+
+<BusinessView locale="en" business={business} offers={offers} />

@@ -1,0 +1,62 @@
+---
+import { translate, type Business, type Locale } from '@leamington/shared';
+
+interface Props {
+  business: Business;
+  locale: Locale;
+}
+
+const { business, locale } = Astro.props;
+
+/*
+ * OpenStreetMap rather than the Google Maps Embed API: the Google embed needs
+ * an API key, which would mean a key in the client bundle and a billable call
+ * on every page view of a directory whose whole point is being cheap to serve.
+ * OSM's embed needs neither, and the "open in Maps" link below still hands off
+ * to whatever map app the phone actually has.
+ */
+const DELTA = 0.004; // ~450m — close enough to see the street.
+const geo = business.geo;
+
+const query = encodeURIComponent(
+  [business.name, business.address.line1, business.address.city, business.address.province]
+    .filter(Boolean)
+    .join(', '),
+);
+
+const embedSrc = geo
+  ? `https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng - DELTA}%2C${
+      geo.lat - DELTA
+    }%2C${geo.lng + DELTA}%2C${geo.lat + DELTA}&layer=mapnik&marker=${geo.lat}%2C${geo.lng}`
+  : null;
+
+// Geo coordinates open the exact pin; without them, fall back to a text search.
+const externalHref = geo
+  ? `https://www.google.com/maps/search/?api=1&query=${geo.lat},${geo.lng}`
+  : `https://www.google.com/maps/search/?api=1&query=${query}`;
+---
+
+<section class="mt-6">
+  <h2 class="text-lg font-semibold text-neutral-900">{translate(locale, 'business.map')}</h2>
+
+  {
+    embedSrc && (
+      <iframe
+        src={embedSrc}
+        title={translate(locale, 'business.map')}
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        class="mt-2 h-56 w-full rounded-xl border border-neutral-200"
+      />
+    )
+  }
+
+  <a
+    href={externalHref}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="btn-secondary mt-2 w-full"
+  >
+    {translate(locale, 'business.viewOnMap')}
+  </a>
+</section>

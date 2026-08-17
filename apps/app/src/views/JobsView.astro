@@ -1,25 +1,24 @@
 ---
-import Base from '../../layouts/Base.astro';
-import ClickoutLink from '../../components/ClickoutLink';
+import Base from '../layouts/Base.astro';
+import ClickoutLink from '../components/ClickoutLink';
 import {
-  LOCALES,
   formatCompensation,
   formatDate,
-  localizedPath,
   pick,
   translate,
   truncate,
   type Locale,
   type MessageKey,
 } from '@leamington/shared';
-import { getOpenJobs } from '../../lib/content';
-import { jobJsonLd, serializeJsonLd } from '../../lib/seo';
+import { getOpenJobs } from '../lib/content';
+import { jobJsonLd, serializeJsonLd } from '../lib/seo';
+import { businessPath, ROUTES } from '../lib/routes';
 
-export function getStaticPaths() {
-  return LOCALES.map((lang) => ({ params: { lang } }));
+interface Props {
+  locale: Locale;
 }
 
-const locale = Astro.params.lang as Locale;
+const { locale } = Astro.props;
 const t = (key: MessageKey, params?: Record<string, string | number>) =>
   translate(locale, key, params);
 const site = Astro.site?.toString() ?? 'https://leamington.city';
@@ -36,7 +35,7 @@ const EMPLOYMENT_LABEL: Record<string, MessageKey> = {
 
 <Base
   locale={locale}
-  path="/jobs"
+  path={ROUTES.jobs}
   title={`${t('job.title')} · Leamington`}
   description={t('feed.subtitle')}
   jsonLd={jobs.slice(0, 20).map((job) => serializeJsonLd(jobJsonLd(job, locale, site)))}
@@ -51,10 +50,7 @@ const EMPLOYMENT_LABEL: Record<string, MessageKey> = {
         <li id={`job-${job.id}`} class="card">
           <h2 class="font-semibold text-neutral-900">{pick(job.title, locale)}</h2>
           <p class="text-sm text-neutral-600">
-            <a
-              href={localizedPath(locale, `/business/${job.business.slug}`)}
-              class="underline"
-            >
+            <a href={businessPath(job.business, locale)} class="underline">
               {job.business.name}
             </a>
           </p>

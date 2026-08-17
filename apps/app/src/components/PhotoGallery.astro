@@ -1,0 +1,39 @@
+---
+import { translate, type Locale } from '@leamington/shared';
+
+interface Props {
+  photos: string[];
+  name: string;
+  locale: Locale;
+}
+
+const { photos, name, locale } = Astro.props;
+---
+
+{
+  photos.length > 0 && (
+    <section class="mt-6">
+      <h2 class="text-lg font-semibold text-neutral-900">
+        {translate(locale, 'business.photos')}
+      </h2>
+
+      {/* Horizontal snap rail: one thumb per swipe, no gallery library, and
+          nothing below the fold is fetched until it is scrolled to. */}
+      <ul class="-mx-4 mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2">
+        {photos.map((photo, index) => (
+          <li class="snap-start">
+            <img
+              src={photo}
+              alt={`${name} — ${index + 1}/${photos.length}`}
+              width="280"
+              height="200"
+              loading="lazy"
+              decoding="async"
+              class="h-48 w-70 rounded-xl object-cover"
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

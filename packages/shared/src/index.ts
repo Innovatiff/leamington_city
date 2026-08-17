@@ -35,6 +35,8 @@ export * from './converters/user.js';
 export * from './slug.js';
 export * from './dates.js';
 export * from './format.js';
+export * from './categories.js';
+export * from './hours.js';
 
 // i18n
 export * from './i18n/index.js';

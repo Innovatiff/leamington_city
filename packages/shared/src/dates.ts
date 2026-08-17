@@ -39,6 +39,31 @@ export function toWeekday(instant: Date = new Date()): number {
   return WEEKDAY_INDEX[WEEKDAY_FORMATTER.format(instant)] ?? 0;
 }
 
+const CLOCK_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/**
+ * Wall-clock position in Leamington, as (weekday, minutes-past-midnight).
+ *
+ * This is what makes the open/closed island correct on a phone whose clock is
+ * set to another zone: the device's own offset is never consulted, only the
+ * instant, which is universal.
+ */
+export function toLocalTimeParts(instant: Date = new Date()): {
+  weekday: number;
+  minutes: number;
+} {
+  const [hourPart = '0', minutePart = '0'] = CLOCK_FORMATTER.format(instant).split(':');
+  return {
+    weekday: toWeekday(instant),
+    minutes: Number(hourPart) * 60 + Number(minutePart),
+  };
+}
+
 export function addDays(dayKey: DayKey, days: number): DayKey {
   const [year, month, day] = dayKey.split('-').map(Number);
   // Noon UTC keeps the arithmetic clear of both DST transitions.

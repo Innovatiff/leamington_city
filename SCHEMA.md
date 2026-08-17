@@ -16,6 +16,9 @@ Conventions used throughout:
 - **Money** is integer cents plus a currency code. Default `CAD`.
 - **Dates without a time** (feed days, offer day-parting) are `YYYY-MM-DD` strings
   in `America/Toronto`. ISO-8601 sorts lexicographically, so range queries work.
+- **No nested arrays.** Firestore rejects an array whose elements are arrays.
+  Anything shaped that way in the model (opening hours) is stored as a map keyed
+  by index and rebuilt by the converter.
 
 ## Collections
 
@@ -29,13 +32,17 @@ Conventions used throughout:
 | `redemptions/{redemptionId}` | issuing user | functions only | Offer redemption |
 | `subscriptions/{businessId}` | owner | functions only | Billing state |
 | `users/{uid}` | self | self (restricted fields) | Prefs, push state |
+| `system/build` | none | functions only | Netlify rebuild dirty marker |
 
 ---
 
 ### `businesses/{businessId}`
 
-The directory record. `slug` is unique across the collection and is the public
-URL segment (`/en/business/tommys-diner`).
+The directory record. `slug` is unique across the collection; together with the
+category it forms the public URL — `/{categorySlug}/{slug}`, e.g.
+`/restaurants/tommys-diner`, with the Spanish page at
+`/es/restaurants/tommys-diner`. Category slugs are fixed in
+`packages/shared/src/categories.ts` and are never translated.
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -54,7 +61,7 @@ URL segment (`/en/business/tommys-diner`).
 | `email` | `string \| null` | Public contact, not the owner login. |
 | `websiteUrl` | `string \| null` | **The link-out target.** Ordering lives here, not in the app. |
 | `socials` | `Socials` | `facebook`/`instagram`/`x`/`tiktok`, each nullable. |
-| `hours` | `WeekHours \| null` | Per weekday intervals, `America/Toronto`. |
+| `hours` | `WeekHours \| null` | Per weekday intervals, `America/Toronto`. Stored as a **map** keyed `'0'`–`'6'` — Firestore forbids nested arrays, so the model's 7-tuple cannot go on the wire as-is. The converter handles both directions. |
 | `logoUrl` / `heroUrl` | `string \| null` | Storage download URLs. |
 | `photos` | `string[]` | Ordered gallery. |
 | `tags` | `string[]` | Free-form facets (`patio`, `halal`, `bilingual-staff`). |
@@ -143,6 +150,13 @@ Functions only. Doc id equals the business id.
 'active' | 'past_due' | 'canceled', provider, providerCustomerId | null,
 providerSubscriptionId | null, currentPeriodStart | null, currentPeriodEnd |
 null, cancelAtPeriodEnd, createdAt, updatedAt }`
+
+### `system/build`
+
+Not a user-facing collection. Coalesces static-site rebuilds so a bulk import
+costs one Netlify build rather than one per document.
+
+`{ dirtyAt: Date | null, lastBuiltAt: Date | null, lastReason: string | null }`
 
 ### `users/{uid}`
 

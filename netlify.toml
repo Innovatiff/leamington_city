@@ -1,0 +1,59 @@
+# Netlify deploys apps/app (the public site) only.
+# The portal and admin stay on Firebase Hosting — see firebase.json.
+#
+# Builds are triggered by a build hook that `functions/src/netlify.ts` calls
+# when business, offer or job data changes, coalesced to at most one build per
+# ten minutes.
+
+[build]
+  base = "."
+  publish = "apps/app/dist"
+  command = "pnpm install --frozen-lockfile && pnpm build:shared && pnpm --filter @leamington/app build"
+
+[build.environment]
+  # Matches .nvmrc and the Cloud Functions runtime.
+  NODE_VERSION = "22"
+  # The build reads Firestore through the Admin SDK. Set these in the Netlify
+  # UI (Site settings → Environment variables), not here:
+  #   GOOGLE_CLOUD_PROJECT           the Firebase project id
+  #   GOOGLE_APPLICATION_CREDENTIALS path to a service-account JSON, or
+  #   FIREBASE_SERVICE_ACCOUNT       the JSON itself, written out in a prebuild
+  #   PUBLIC_SITE_URL                canonical origin, for canonical/hreflang
+  #   PUBLIC_FIREBASE_*              web config for the client islands
+
+# The old locale-prefixed English URLs. English now lives at the root.
+[[redirects]]
+  from = "/en/*"
+  to = "/:splat"
+  status = 301
+  force = true
+
+# Business pages used to sit under /business/<slug>; they are now
+# /<category>/<slug>. Nothing can rewrite that without knowing the category,
+# so send the stragglers to the directory rather than to a 404.
+[[redirects]]
+  from = "/business/*"
+  to = "/businesses"
+  status = 301
+
+[[redirects]]
+  from = "/es/business/*"
+  to = "/es/businesses"
+  status = 301
+
+# Rebuilt on every deploy, so it can be cached hard and revalidated cheaply.
+[[headers]]
+  for = "/search-index.json"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

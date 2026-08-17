@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { getDocs, query, where } from 'firebase/firestore';
 import { toDayKey, type Business } from '@leamington/shared';
 import { useSession } from './lib/session';
-import { assignBusinessOwner, rebuildFeed, refs, sendSignInLink } from './lib/firebase';
+import {
+  assignBusinessOwner,
+  rebuildFeed,
+  rebuildSite,
+  refs,
+  sendSignInLink,
+} from './lib/firebase';
 
 function SignIn() {
   const { t } = useSession();
@@ -149,6 +155,19 @@ export default function App() {
     );
   }
 
+  async function handleRebuildSite(): Promise<void> {
+    setBusy(true);
+    setFeedMessage(null);
+    try {
+      const result = await rebuildSite();
+      setFeedMessage(result.data.triggered ? 'Netlify build queued' : 'Nothing to publish');
+    } catch {
+      setFeedMessage(t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleRebuild(): Promise<void> {
     setBusy(true);
     setFeedMessage(null);
@@ -180,6 +199,17 @@ export default function App() {
         <div className="mt-3 flex items-center gap-3">
           <button type="button" className="btn-primary" onClick={handleRebuild} disabled={busy}>
             {t('admin.rebuildFeed')}
+          </button>
+          {/* The public site is static; a data change is not live until it
+              rebuilds. This forces that now instead of waiting for the
+              five-minute coalescing tick. */}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleRebuildSite}
+            disabled={busy}
+          >
+            {t('admin.publishSite')}
           </button>
           {feedMessage && <span className="text-sm text-neutral-700">{feedMessage}</span>}
         </div>

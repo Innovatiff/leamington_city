@@ -21,6 +21,7 @@ import {
   offerConverter,
   toDayKey,
   type Business,
+  type BusinessCategory,
   type FeedDay,
   type Job,
   type Offer,
@@ -73,6 +74,24 @@ export async function getBusinesses(): Promise<Business[]> {
   return snapshot.docs
     .map((doc) => doc.data())
     .sort((a, b) => b.rank - a.rank || a.sortName.localeCompare(b.sortName));
+}
+
+/**
+ * Published businesses grouped by category, ordered within each group.
+ *
+ * One pass over one query — category pages must not each run their own read.
+ */
+export async function getBusinessesByCategory(): Promise<
+  Map<BusinessCategory, Business[]>
+> {
+  const businesses = await getBusinesses();
+  const grouped = new Map<BusinessCategory, Business[]>();
+  for (const business of businesses) {
+    const bucket = grouped.get(business.category) ?? [];
+    bucket.push(business);
+    grouped.set(business.category, bucket);
+  }
+  return grouped;
 }
 
 export async function getBusinessBySlug(slug: string): Promise<Business | null> {
