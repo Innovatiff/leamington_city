@@ -68,7 +68,7 @@ function jobToItem(job: Job): FeedItem {
       es: job.business.name,
     },
     imageUrl: job.business.logoUrl,
-    href: `/jobs/${job.id}`,
+    href: `/jobs#job-${job.id}`,
     endsAt: job.expiresAt,
   };
 }

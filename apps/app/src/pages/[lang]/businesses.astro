@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  LOCALES,
+  localizedPath,
+  pick,
+  translate,
+  truncate,
+  type Locale,
+} from '@leamington/shared';
+import { getBusinesses } from '../../lib/content';
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+const businesses = await getBusinesses();
+
+// Grouped so a phone can scan by category without a filter UI.
+const byCategory = new Map<string, typeof businesses>();
+for (const business of businesses) {
+  const bucket = byCategory.get(business.category) ?? [];
+  bucket.push(business);
+  byCategory.set(business.category, bucket);
+}
+const groups = [...byCategory.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+---
+
+<Base
+  locale={locale}
+  path="/businesses"
+  title={`${t('nav.directory')} · Leamington`}
+  description={t('feed.subtitle')}
+>
+  <h1 class="text-2xl font-bold text-neutral-900">{t('nav.directory')}</h1>
+  <p class="mt-1 text-sm text-neutral-600">
+    {businesses.length} {t('nav.directory').toLowerCase()}
+  </p>
+
+  {businesses.length === 0 && <p class="mt-8 text-neutral-600">{t('common.empty')}</p>}
+
+  {
+    groups.map(([category, group]) => (
+      <section class="mt-6">
+        <h2 class="text-sm font-bold uppercase tracking-wide text-neutral-500">
+          {category.replace(/_/g, ' ')}
+        </h2>
+        <ul class="mt-2 space-y-2">
+          {group.map((business) => (
+            <li>
+              <a
+                href={localizedPath(locale, `/business/${business.slug}`)}
+                class="card flex items-center gap-3"
+              >
+                {business.logoUrl && (
+                  <img
+                    src={business.logoUrl}
+                    alt=""
+                    width="40"
+                    height="40"
+                    loading="lazy"
+                    decoding="async"
+                    class="h-10 w-10 shrink-0 rounded-full object-cover"
+                  />
+                )}
+                <div class="min-w-0">
+                  <p class="truncate font-semibold text-neutral-900">{business.name}</p>
+                  <p class="truncate text-sm text-neutral-600">
+                    {truncate(pick(business.shortDescription, locale), 80)}
+                  </p>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</Base>

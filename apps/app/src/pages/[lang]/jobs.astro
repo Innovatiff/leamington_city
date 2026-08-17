@@ -1,0 +1,97 @@
+---
+import Base from '../../layouts/Base.astro';
+import ClickoutLink from '../../components/ClickoutLink';
+import {
+  LOCALES,
+  formatCompensation,
+  formatDate,
+  localizedPath,
+  pick,
+  translate,
+  truncate,
+  type Locale,
+  type MessageKey,
+} from '@leamington/shared';
+import { getOpenJobs } from '../../lib/content';
+import { jobJsonLd, serializeJsonLd } from '../../lib/seo';
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = (key: MessageKey, params?: Record<string, string | number>) =>
+  translate(locale, key, params);
+const site = Astro.site?.toString() ?? 'https://leamington.city';
+const jobs = await getOpenJobs();
+
+const EMPLOYMENT_LABEL: Record<string, MessageKey> = {
+  full_time: 'job.fullTime',
+  part_time: 'job.partTime',
+  seasonal: 'job.seasonal',
+  contract: 'job.contract',
+  temporary: 'job.temporary',
+};
+---
+
+<Base
+  locale={locale}
+  path="/jobs"
+  title={`${t('job.title')} · Leamington`}
+  description={t('feed.subtitle')}
+  jsonLd={jobs.slice(0, 20).map((job) => serializeJsonLd(jobJsonLd(job, locale, site)))}
+>
+  <h1 class="text-2xl font-bold text-neutral-900">{t('job.title')}</h1>
+
+  {jobs.length === 0 && <p class="mt-8 text-neutral-600">{t('common.empty')}</p>}
+
+  <ul class="mt-4 space-y-3">
+    {
+      jobs.map((job) => (
+        <li id={`job-${job.id}`} class="card">
+          <h2 class="font-semibold text-neutral-900">{pick(job.title, locale)}</h2>
+          <p class="text-sm text-neutral-600">
+            <a
+              href={localizedPath(locale, `/business/${job.business.slug}`)}
+              class="underline"
+            >
+              {job.business.name}
+            </a>
+          </p>
+
+          <p class="mt-1 flex flex-wrap gap-2 text-xs text-neutral-600">
+            <span class="rounded bg-neutral-100 px-2 py-1">
+              {t(EMPLOYMENT_LABEL[job.employmentType] ?? 'job.partTime')}
+            </span>
+            {job.compensation && (
+              <span class="rounded bg-neutral-100 px-2 py-1">
+                {formatCompensation(job.compensation, locale)}
+              </span>
+            )}
+          </p>
+
+          <p class="mt-2 text-sm text-neutral-700">
+            {truncate(pick(job.description, locale), 200)}
+          </p>
+          <p class="mt-2 text-xs text-neutral-500">
+            {t('job.postedOn', { date: formatDate(job.postedAt, locale) })}
+          </p>
+
+          {(job.applyUrl || job.applyEmail) && (
+            <div class="mt-3">
+              <ClickoutLink
+                client:visible
+                targetType="job"
+                targetId={job.id}
+                fallbackUrl={job.applyUrl ?? `mailto:${job.applyEmail}`}
+                locale={locale}
+                source="directory"
+                label={t('job.apply')}
+              />
+            </div>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

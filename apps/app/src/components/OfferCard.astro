@@ -1,0 +1,71 @@
+---
+import { formatDate, formatMoney, pick, translate, type Locale, type Offer } from '@leamington/shared';
+
+interface Props {
+  offer: Offer;
+  locale: Locale;
+  /** Business pages already say whose offer it is. */
+  showBusiness?: boolean;
+}
+
+const { offer, locale, showBusiness = true } = Astro.props;
+
+function headline(): string | null {
+  if (offer.kind === 'percent' && offer.percentOff !== null) {
+    return translate(locale, 'offer.percentOff', { percent: offer.percentOff });
+  }
+  if (offer.kind === 'amount' && offer.amountOff) {
+    return translate(locale, 'offer.amountOff', {
+      amount: formatMoney(offer.amountOff, locale),
+    });
+  }
+  if (offer.kind === 'bogo') return translate(locale, 'offer.bogo');
+  if (offer.kind === 'freebie') return translate(locale, 'offer.freebie');
+  return null;
+}
+
+const badge = headline();
+---
+
+<article id={`offer-${offer.id}`} class="card">
+  <div class="flex items-start gap-3">
+    {
+      offer.imageUrl && (
+        <img
+          src={offer.imageUrl}
+          alt=""
+          width="64"
+          height="64"
+          loading="lazy"
+          decoding="async"
+          class="h-16 w-16 shrink-0 rounded-lg object-cover"
+        />
+      )
+    }
+    <div class="min-w-0 flex-1">
+      {badge && (
+        <p class="text-sm font-bold text-brand-600">{badge}</p>
+      )}
+      <h3 class="text-base font-semibold text-neutral-900">
+        {pick(offer.title, locale)}
+      </h3>
+      {
+        showBusiness && (
+          <p class="truncate text-sm text-neutral-600">{offer.business.name}</p>
+        )
+      }
+      <p class="mt-1 text-sm text-neutral-700">{pick(offer.description, locale)}</p>
+      <p class="mt-2 text-xs text-neutral-500">
+        {translate(locale, 'feed.endsOn', { date: formatDate(offer.endsAt, locale) })}
+      </p>
+      {
+        pick(offer.terms, locale) && (
+          <details class="mt-2 text-xs text-neutral-500">
+            <summary class="cursor-pointer">{translate(locale, 'offer.terms')}</summary>
+            <p class="mt-1">{pick(offer.terms, locale)}</p>
+          </details>
+        )
+      }
+    </div>
+  </div>
+</article>

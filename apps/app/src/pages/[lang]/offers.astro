@@ -1,0 +1,32 @@
+---
+import Base from '../../layouts/Base.astro';
+import OfferCard from '../../components/OfferCard.astro';
+import { LOCALES, translate, type Locale } from '@leamington/shared';
+import { getLiveOffers } from '../../lib/content';
+import { offerJsonLd, serializeJsonLd } from '../../lib/seo';
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+const site = Astro.site?.toString() ?? 'https://leamington.city';
+const offers = await getLiveOffers();
+---
+
+<Base
+  locale={locale}
+  path="/offers"
+  title={`${t('offer.title')} · Leamington`}
+  description={t('feed.subtitle')}
+  jsonLd={offers.slice(0, 20).map((offer) => serializeJsonLd(offerJsonLd(offer, locale, site)))}
+>
+  <h1 class="text-2xl font-bold text-neutral-900">{t('offer.title')}</h1>
+
+  {offers.length === 0 && <p class="mt-8 text-neutral-600">{t('feed.empty')}</p>}
+
+  <div class="mt-4 space-y-3">
+    {offers.map((offer) => <OfferCard offer={offer} locale={locale} />)}
+  </div>
+</Base>

@@ -1,0 +1,40 @@
+---
+// Root has no content of its own. Hosting redirects `/` to `/en`; this page
+// exists so a direct hit still lands somewhere, and so crawlers see the pair.
+import { DEFAULT_LOCALE, LOCALES, localizedPath, translate } from '@leamington/shared';
+
+const site = Astro.site?.toString() ?? 'https://leamington.city';
+const target = localizedPath(DEFAULT_LOCALE, '/');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <link rel="canonical" href={new URL(target, site).toString()} />
+    {
+      LOCALES.map((locale) => (
+        <link
+          rel="alternate"
+          hreflang={locale}
+          href={new URL(localizedPath(locale, '/'), site).toString()}
+        />
+      ))
+    }
+    <title>Leamington</title>
+  </head>
+  <body>
+    <ul>
+      {
+        LOCALES.map((locale) => (
+          <li>
+            <a href={localizedPath(locale, '/')} hreflang={locale}>
+              {translate(locale, 'common.languageName')}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </body>
+</html>
