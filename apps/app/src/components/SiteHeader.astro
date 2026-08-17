@@ -43,16 +43,22 @@ const isCurrent = (href: string): boolean => {
       class="group flex shrink-0 items-center gap-2"
       aria-label="Leamington"
     >
+      {/* Sun over the lake — the two civic colours, and a mark that means
+          something here rather than a generic map pin. */}
       <span
-        class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white
-          shadow-[--shadow-soft] transition group-hover:bg-brand-700"
+        class="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-brand-700
+          shadow-[--shadow-soft] transition group-hover:bg-brand-600"
       >
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
+        <svg viewBox="0 0 32 32" class="h-9 w-9" aria-hidden="true">
+          <circle cx="16" cy="13" r="5.4" fill="var(--color-sun-400)"></circle>
           <path
-            d="M12 21s7-5.3 7-10.6A7 7 0 0 0 5 10.4C5 15.7 12 21 12 21Z"
-            fill="currentColor"
-            opacity=".28"></path>
-          <circle cx="12" cy="10.2" r="3.1" fill="currentColor"></circle>
+            d="M2 21c3 0 3 1.8 6 1.8S11 21 14 21s3 1.8 6 1.8S23 21 26 21s3 1.8 6 1.8"
+            fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round"
+            opacity=".85"></path>
+          <path
+            d="M2 26c3 0 3 1.8 6 1.8S11 26 14 26s3 1.8 6 1.8S23 26 26 26s3 1.8 6 1.8"
+            fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"
+            opacity=".5"></path>
         </svg>
       </span>
       <span class="hidden text-[17px] font-extrabold tracking-tight text-ink-900 sm:block">

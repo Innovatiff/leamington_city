@@ -24,7 +24,7 @@ import {
 } from '@leamington/shared';
 import { businessJsonLd, offerJsonLd, serializeJsonLd } from '../lib/seo';
 import { businessPathBare, categoryPath, claimUrl } from '../lib/routes';
-import { businessCover, businessPhotos, coverFallback } from '../lib/covers';
+import { businessCover, businessPhotos, coverFallback, galleryFallbacks } from '../lib/covers';
 import { SITE_URL } from '../lib/site';
 
 interface Props {
@@ -203,7 +203,7 @@ const fullAddress = [
         photos={businessPhotos(business)}
         name={business.name}
         locale={locale}
-        fallback={coverFallbackSrc}
+        fallbacks={galleryFallbacks(business, businessPhotos(business).length)}
       />
 
       {

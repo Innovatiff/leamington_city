@@ -100,6 +100,16 @@ is fully server-rendered with `ItemList` JSON-LD.
 
 ### Design and imagery
 
+The palette is Leamington's civic blue and yellow — the lake and the Sun
+Parlour. Blue carries every action and all the structure; yellow is the accent
+and appears rarely, because a highlight that shows up everywhere stops
+highlighting anything. In practice yellow is the hero's primary button, the
+deal's value stub, and the owner CTA. Green survives as a status colour for
+"open now" only: it is the one signal every reader already knows how to read.
+
+**Yellow never carries white text.** Nothing in the `sun-*` ramp reaches 4.5:1
+against white, so `bg-sun-*` is always paired with `text-ink-900`.
+
 Navigation is at the top on every breakpoint — there is no bottom tab bar. On a
 phone the header carries the brand, search and language switch on one row and
 the section links on a second.
@@ -125,6 +135,11 @@ The covers themselves are built by `scripts/generate-imagery.mjs`, which
 rasterises layered SVG scenes through Chromium into
 `apps/app/public/img/covers/`. Each category has three visually distinct
 compositions so a category page never shows the same picture four times.
+
+Every cover lives on the arc from deep lake blue to Sun Parlour yellow.
+Categories are told apart by *lightness and temperature* along that arc — gold,
+green, teal, sky, steel, navy — rather than by breaking out of it, so fifteen
+tiles on one page read as one set instead of a rainbow.
 Regenerate with:
 
 ```bash

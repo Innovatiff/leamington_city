@@ -86,15 +86,16 @@ const openCandidates = businesses.slice(0, 60).map((business) => ({
     {/* Two scrims rather than one: a left-weighted wash keeps the headline
         legible, and a soft bottom fade carries the eye into the page. The
         artwork stays visible on the right instead of being crushed flat. */}
-    {/* One left-weighted scrim, kept as light as the contrast checker allows.
-        An earlier pass stacked two and flattened the artwork to brown. */}
+    {/* One left-weighted scrim, kept as light as legibility allows. The
+        artwork is already dark at the waterline, so this only has to carry the
+        headline over the sky. */}
     <div
-      class="absolute inset-0 -z-10 bg-gradient-to-r from-ink-950/78 via-ink-950/40 to-transparent"
+      class="absolute inset-0 -z-10 bg-gradient-to-r from-brand-950/80 via-brand-950/45 to-brand-950/5"
     >
     </div>
 
     <div class="shell py-16 sm:py-24 lg:py-28">
-      <p class="eyebrow text-brand-200">Leamington, Ontario</p>
+      <p class="eyebrow text-sun-300">Leamington, Ontario</p>
       <h1
         class="text-shadow-hero mt-2 max-w-3xl text-4xl font-extrabold leading-[1.05]
           text-white sm:text-5xl lg:text-6xl"
@@ -106,7 +107,9 @@ const openCandidates = businesses.slice(0, 60).map((business) => ({
       </p>
 
       <div class="mt-7 flex flex-col gap-3 sm:flex-row">
-        <a href={localizedPath(locale, ROUTES.search)} class="btn-primary btn-lg">
+        {/* Yellow, not blue: the banner is already blue, and the primary
+            action has to win against it. */}
+        <a href={localizedPath(locale, ROUTES.search)} class="btn-sun btn-lg">
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
             <circle cx="11" cy="11" r="7"></circle>
             <path d="m20 20-3.2-3.2" stroke-linecap="round"></path>
@@ -196,11 +199,11 @@ const openCandidates = businesses.slice(0, 60).map((business) => ({
                     decoding="async"
                     class="card-zoom"
                   />
-                  <div class="absolute inset-x-0 bottom-0 p-3">
-                    <p class="text-shadow-hero text-sm font-bold leading-tight text-white">
+                  <div class="cover-caption">
+                    <p class="text-sm font-bold leading-tight text-white">
                       {t(categoryMessageKey(category))}
                     </p>
-                    <p class="text-shadow-hero text-[11px] font-medium text-white/80">
+                    <p class="text-[11px] font-semibold text-white/85">
                       {translateCount(locale, 'category.countOne', 'category.count', counts.get(category) ?? 0)}
                     </p>
                   </div>
@@ -250,17 +253,18 @@ const openCandidates = businesses.slice(0, 60).map((business) => ({
   {/* ----------------------------------------------------------------- owner */}
   <section class="shell pb-16">
     <div
-      class="relative overflow-hidden rounded-3xl bg-ink-900 px-6 py-10 text-white sm:px-10 sm:py-12"
+      class="relative overflow-hidden rounded-3xl bg-brand-900 px-6 py-10 text-white sm:px-10 sm:py-12"
     >
+      {/* A low sun in the corner, echoing the banner. */}
       <div
-        class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-600/40 blur-3xl"
+        class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-sun-400/25 blur-3xl"
         aria-hidden="true"
       >
       </div>
       <div class="relative max-w-xl">
         <h2 class="text-2xl font-extrabold sm:text-3xl">{t('home.ownerTitle')}</h2>
-        <p class="mt-2 text-white/75">{t('home.ownerBody')}</p>
-        <a href={ROUTES.portal} class="btn-primary btn-lg mt-6" rel="noopener">
+        <p class="mt-2 text-brand-100/80">{t('home.ownerBody')}</p>
+        <a href={ROUTES.portal} class="btn-sun btn-lg mt-6" rel="noopener">
           {t('home.ownerCta')}
         </a>
       </div>

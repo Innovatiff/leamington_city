@@ -50,6 +50,23 @@ export function coverFallback(
 }
 
 /**
+ * One fallback per gallery slot.
+ *
+ * A single shared fallback meant that if every remote photo failed, the gallery
+ * showed the same picture three times — which reads as a bug rather than as a
+ * graceful degradation. Seeding by index spreads them across the category's
+ * variants instead.
+ */
+export function galleryFallbacks(
+  business: Pick<Business, 'slug' | 'category'>,
+  count: number,
+): string[] {
+  return Array.from({ length: count }, (_unused, index) =>
+    categoryCover(business.category, `${business.slug}#${index}`),
+  );
+}
+
+/**
  * Photos for the gallery. Deliberately does NOT fall back to the cover: a
  * one-item gallery showing the same picture as the header reads as a bug, and
  * the section hides itself when this is empty.
@@ -63,11 +80,21 @@ export function businessPhotos(
 export const HERO_COVER = '/img/covers/hero.jpg';
 
 /**
- * Deterministic tile colour for a monogram avatar, as a hue in degrees.
- * Businesses without a logo still need to be visually distinguishable in a list.
+ * Hues a monogram tile may use, in oklch degrees.
+ *
+ * Deliberately not the whole colour wheel: picking freely produced maroon and
+ * magenta avatars sitting next to a blue-and-yellow page. These run gold →
+ * green → teal → blue → indigo, so a list of thirty is still varied without
+ * anything landing outside the brand.
+ */
+const MONOGRAM_HUES = [88, 112, 148, 176, 198, 222, 244, 262] as const;
+
+/**
+ * Deterministic tile hue for a monogram avatar.
+ * Businesses without a logo still need to be distinguishable in a list.
  */
 export function monogramHue(seed: string): number {
-  return hash(seed) % 360;
+  return MONOGRAM_HUES[hash(seed) % MONOGRAM_HUES.length] ?? MONOGRAM_HUES[0];
 }
 
 export function monogram(name: string): string {

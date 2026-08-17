@@ -19,42 +19,66 @@
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
 
-  /* Greenhouse country: tomato red against deep leaf green. */
-  --color-brand-50: oklch(0.972 0.017 27);
-  --color-brand-100: oklch(0.936 0.04 27);
-  --color-brand-200: oklch(0.876 0.079 27);
-  --color-brand-300: oklch(0.795 0.124 27);
-  --color-brand-400: oklch(0.702 0.168 27);
-  --color-brand-500: oklch(0.623 0.194 27);
-  --color-brand-600: oklch(0.552 0.192 27);
-  --color-brand-700: oklch(0.468 0.166 27);
-  --color-brand-800: oklch(0.394 0.135 27);
-  --color-brand-900: oklch(0.334 0.109 27);
+  /*
+   * Leamington's civic colours: the blue of Lake Erie and the yellow of the
+   * Sun Parlour. Blue carries every action and every piece of structure;
+   * yellow is the accent and is used sparingly, because a highlight that
+   * appears everywhere stops highlighting anything.
+   *
+   * Yellow never carries white text — nothing in the ramp reaches 4.5:1
+   * against white — so `bg-sun-*` is always paired with `text-ink-900`.
+   */
+  --color-brand-50: oklch(0.972 0.014 252);
+  --color-brand-100: oklch(0.936 0.035 252);
+  --color-brand-200: oklch(0.877 0.072 253);
+  --color-brand-300: oklch(0.786 0.116 254);
+  --color-brand-400: oklch(0.668 0.155 255);
+  --color-brand-500: oklch(0.567 0.182 256);
+  --color-brand-600: oklch(0.487 0.176 257);
+  --color-brand-700: oklch(0.408 0.148 258);
+  --color-brand-800: oklch(0.338 0.118 259);
+  --color-brand-900: oklch(0.281 0.092 260);
+  --color-brand-950: oklch(0.196 0.063 261);
 
-  --color-leaf-50: oklch(0.965 0.035 150);
-  --color-leaf-100: oklch(0.925 0.07 150);
-  --color-leaf-500: oklch(0.63 0.145 150);
-  --color-leaf-600: oklch(0.552 0.132 150);
-  --color-leaf-700: oklch(0.462 0.11 150);
+  --color-sun-50: oklch(0.982 0.022 96);
+  --color-sun-100: oklch(0.955 0.062 96);
+  --color-sun-200: oklch(0.915 0.112 95);
+  --color-sun-300: oklch(0.876 0.148 92);
+  --color-sun-400: oklch(0.838 0.166 88);
+  --color-sun-500: oklch(0.784 0.164 84);
+  --color-sun-600: oklch(0.692 0.148 80);
+  --color-sun-700: oklch(0.566 0.121 76);
+  --color-sun-800: oklch(0.457 0.096 73);
+  --color-sun-900: oklch(0.383 0.078 71);
 
-  /* Warm ink — pure grey looks clinical next to the tomato red. */
-  --color-ink-50: oklch(0.985 0.003 60);
-  --color-ink-100: oklch(0.968 0.005 60);
-  --color-ink-200: oklch(0.925 0.007 60);
-  --color-ink-300: oklch(0.863 0.009 60);
-  --color-ink-400: oklch(0.708 0.011 60);
-  --color-ink-500: oklch(0.565 0.012 60);
-  --color-ink-600: oklch(0.452 0.012 60);
-  --color-ink-700: oklch(0.375 0.011 60);
-  --color-ink-800: oklch(0.276 0.009 60);
-  --color-ink-900: oklch(0.208 0.008 60);
-  --color-ink-950: oklch(0.148 0.007 60);
+  /* "Open now" is a status, not a brand colour, so it stays green — the one
+     thing every reader already knows how to read at a glance. */
+  --color-leaf-50: oklch(0.965 0.033 156);
+  --color-leaf-100: oklch(0.925 0.068 156);
+  --color-leaf-500: oklch(0.625 0.142 156);
+  --color-leaf-600: oklch(0.545 0.128 156);
+  --color-leaf-700: oklch(0.452 0.106 156);
+
+  /* Cool ink. Warm grey fought the blue; this sits under it. */
+  --color-ink-50: oklch(0.985 0.002 255);
+  --color-ink-100: oklch(0.968 0.004 255);
+  --color-ink-200: oklch(0.925 0.007 255);
+  --color-ink-300: oklch(0.864 0.011 255);
+  --color-ink-400: oklch(0.709 0.015 255);
+  --color-ink-500: oklch(0.566 0.017 255);
+  --color-ink-600: oklch(0.452 0.017 256);
+  --color-ink-700: oklch(0.374 0.016 257);
+  --color-ink-800: oklch(0.274 0.014 258);
+  --color-ink-900: oklch(0.206 0.013 259);
+  --color-ink-950: oklch(0.145 0.011 260);
 
   --radius-card: 1rem;
 
   /* Two shadows only. More than that and nothing reads as elevated. */
-  --shadow-soft: 0 1px 2px oklch(0.2 0.01 60 / 0.05), 0 4px 16px oklch(0.2 0.01 60 / 0.06);
-  --shadow-lift: 0 2px 4px oklch(0.2 0.01 60 / 0.06), 0 12px 32px oklch(0.2 0.01 60 / 0.12);
+  --shadow-soft: 0 1px 2px oklch(0.2 0.013 259 / 0.06), 0 4px 16px oklch(0.2 0.013 259 / 0.07);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.013 259 / 0.07), 0 14px 34px oklch(0.2 0.013 259 / 0.14);
+  /* Used only where a blue surface needs to lift off a blue background. */
+  --shadow-brand: 0 6px 20px oklch(0.487 0.176 257 / 0.28);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -201,6 +225,13 @@
     @apply btn text-ink-700 hover:bg-ink-100;
   }
 
+  /* Reserved for the single highest-emphasis action on a blue surface, where
+     another blue button would disappear. Dark text: see the palette note. */
+  .btn-sun {
+    @apply btn bg-sun-400 text-ink-900 shadow-[--shadow-soft]
+      hover:bg-sun-300 hover:shadow-[--shadow-lift];
+  }
+
   .btn-lg {
     @apply min-h-13 rounded-2xl px-6 text-base;
   }
@@ -250,15 +281,30 @@
     @apply pointer-events-none absolute inset-0;
     background: linear-gradient(
       to top,
-      oklch(0.148 0.007 60 / 0.82) 0%,
-      oklch(0.148 0.007 60 / 0.45) 32%,
-      oklch(0.148 0.007 60 / 0.1) 62%,
+      oklch(0.145 0.011 260 / 0.84) 0%,
+      oklch(0.145 0.011 260 / 0.46) 32%,
+      oklch(0.145 0.011 260 / 0.1) 62%,
       transparent 85%
     );
   }
 
   .cover-plain::after {
     display: none;
+  }
+
+  /* Caption plate for a label sitting on an image. Stronger than the generic
+     cover scrim, because small type at 11–14px needs more separation than a
+     headline does — and several category scenes are light at the base. */
+  .cover-caption {
+    /* z-10 matters: `.cover::after` is generated as the last child, so without
+       it the cover's own scrim paints over this label and greys the text. */
+    @apply absolute inset-x-0 bottom-0 z-10 px-3 pb-2.5 pt-8;
+    background: linear-gradient(
+      to top,
+      oklch(0.145 0.011 260 / 0.92) 0%,
+      oklch(0.145 0.011 260 / 0.72) 45%,
+      transparent 100%
+    );
   }
 
   /* --------------------------------------------------------------- skeletons */
@@ -268,7 +314,7 @@
     background-image: linear-gradient(
       90deg,
       transparent 0%,
-      oklch(1 0 0 / 0.6) 50%,
+      oklch(1 0 0 / 0.65) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
@@ -286,7 +332,7 @@
   }
 
   .eyebrow {
-    @apply text-xs font-bold uppercase tracking-[0.14em] text-brand-700;
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-brand-600;
   }
 
   /* Entrance stagger. Items animate in order without per-item JS. */
@@ -328,5 +374,5 @@
 }
 
 @utility text-shadow-hero {
-  text-shadow: 0 1px 2px oklch(0.148 0.007 60 / 0.5), 0 2px 24px oklch(0.148 0.007 60 / 0.35);
+  text-shadow: 0 1px 2px oklch(0.145 0.011 260 / 0.55), 0 2px 24px oklch(0.145 0.011 260 / 0.4);
 }

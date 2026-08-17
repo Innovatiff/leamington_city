@@ -60,13 +60,9 @@ const fallback = coverFallback(business);
             </span>
           )}
 
-          <div class="absolute inset-x-0 bottom-0 p-3.5">
-            <h3 class="text-shadow-hero text-[17px] font-bold leading-tight text-white">
-              {business.name}
-            </h3>
-            <p class="text-shadow-hero mt-0.5 text-xs font-medium text-white/85">
-              {business.address.line1}
-            </p>
+          <div class="cover-caption pb-3 pt-10">
+            <h3 class="text-[17px] font-bold leading-tight text-white">{business.name}</h3>
+            <p class="mt-0.5 text-xs font-medium text-white/85">{business.address.line1}</p>
           </div>
         </div>
 

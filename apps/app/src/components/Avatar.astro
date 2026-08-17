@@ -20,9 +20,9 @@ const SIZES = {
 // A monogram tile rather than a grey square: a business with no logo still
 // needs to be told apart at a glance in a list of thirty.
 const hue = monogramHue(seed ?? name);
-const tile = `background: linear-gradient(140deg, oklch(0.62 0.13 ${hue}), oklch(0.44 0.12 ${
-  (hue + 38) % 360
-}));`;
+// One hue per tile, light to dark. Rotating the second stop pushed gold tiles
+// into green and made the set look accidental.
+const tile = `background: linear-gradient(145deg, oklch(0.66 0.125 ${hue}), oklch(0.46 0.115 ${hue}));`;
 ---
 
 {

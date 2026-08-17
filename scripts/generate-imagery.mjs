@@ -29,24 +29,50 @@ const OUT = join(HERE, '..', 'apps', 'app', 'public', 'img', 'covers');
  * highlight so the scene reads as having a light source rather than being a
  * flat gradient.
  */
+/*
+ * Every palette lives on the arc from deep lake blue to Sun Parlour yellow.
+ *
+ * An earlier pass gave each category its own hue and the result was a rainbow
+ * that fought the brand — fifteen accent colours on one page. Categories are
+ * still told apart, but by where they sit along that single arc and by their
+ * composition, not by breaking out of it. The whole directory reads as one
+ * thing.
+ */
+/*
+ * Every palette lives on the arc from deep lake blue to Sun Parlour yellow.
+ *
+ * An earlier pass gave each category its own hue and the result was a rainbow
+ * that fought the brand. A second pass over-corrected: constrained to blue, half
+ * the tiles collapsed into the same navy. So categories are separated by
+ * *lightness and temperature* along the arc — pale sky, steel, teal, green,
+ * gold — which keeps them apart at thumbnail size without leaving the family.
+ */
 const PALETTES = {
-  restaurants: { deep: '#4a1512', mid: '#a8341f', lit: '#f2a03d', accent: '#ffd9a0' },
-  cafes: { deep: '#2b1a12', mid: '#7a4a2c', lit: '#d9a066', accent: '#f5e0c3' },
-  bakeries: { deep: '#4a2f10', mid: '#b8802c', lit: '#f0c46a', accent: '#fff0cc' },
-  grocery: { deep: '#12331d', mid: '#2f7a41', lit: '#8cc63f', accent: '#e2f5c4' },
-  shops: { deep: '#331436', mid: '#7a2f78', lit: '#c264c0', accent: '#f7d4ef' },
-  beauty: { deep: '#3a1428', mid: '#94356a', lit: '#e07fae', accent: '#fbd9e8' },
-  health: { deep: '#0d3033', mid: '#1f7a78', lit: '#5cc4b4', accent: '#d2f2ea' },
-  automotive: { deep: '#161d26', mid: '#3c5169', lit: '#7d9dc4', accent: '#dbe7f5' },
-  'home-services': { deep: '#3d2a10', mid: '#8f6a24', lit: '#d9ac53', accent: '#f7e6bd' },
-  professional: { deep: '#111c3a', mid: '#2f4a91', lit: '#7b96d9', accent: '#dbe3f7' },
-  agriculture: { deep: '#14300f', mid: '#3f7a24', lit: '#9ec94a', accent: '#f0f5b8' },
-  recreation: { deep: '#0c2a3a', mid: '#1f6f91', lit: '#57bcd9', accent: '#cdeef7' },
-  lodging: { deep: '#1a1638', mid: '#443a86', lit: '#8b7fd1', accent: '#ded9f7' },
-  community: { deep: '#331a2e', mid: '#8a3050', lit: '#e0748a', accent: '#fbd7d9' },
-  other: { deep: '#241f1c', mid: '#5c5149', lit: '#a99a8a', accent: '#eae2d8' },
-  /** Wide banner for the home page — Leamington's lake horizon at golden hour. */
-  hero: { deep: '#3b1236', mid: '#d1441f', lit: '#ffb347', accent: '#fff0cf' },
+  // Warm end — the Sun Parlour. Bright tops, so they read first.
+  bakeries: { deep: '#3a2c0c', mid: '#9c7a20', lit: '#f2d770', accent: '#fff8d8' },
+  restaurants: { deep: '#241d34', mid: '#8a6c18', lit: '#e9be3c', accent: '#fdf1cc' },
+  cafes: { deep: '#2a2410', mid: '#6f5a1c', lit: '#c9a63c', accent: '#f8ecc4' },
+  agriculture: { deep: '#16321f', mid: '#4a7a2c', lit: '#b6cc55', accent: '#f2f7c8' },
+
+  // Middle — the lake itself.
+  grocery: { deep: '#08302c', mid: '#177a63', lit: '#5fc79c', accent: '#d6f7e4' },
+  recreation: { deep: '#052c3e', mid: '#106a8c', lit: '#48c2dc', accent: '#cbf3fb' },
+  health: { deep: '#07293a', mid: '#1a6c86', lit: '#74d0dc', accent: '#d6f6fa' },
+
+  // Sky blues — light, so they separate from the navies below.
+  community: { deep: '#0b2544', mid: '#2a72b8', lit: '#8ecbf2', accent: '#dcf0fd' },
+  shops: { deep: '#141f46', mid: '#3f5bb0', lit: '#9db2ee', accent: '#e4eafd' },
+  'home-services': { deep: '#12203c', mid: '#3a63a8', lit: '#a6c6ec', accent: '#e2eefb' },
+
+  // Cooler and deeper.
+  beauty: { deep: '#1b1a42', mid: '#5a52a2', lit: '#b8a6e4', accent: '#eae4fb' },
+  lodging: { deep: '#0d1638', mid: '#3b45a8', lit: '#8089e2', accent: '#e0e3fc' },
+  automotive: { deep: '#0f1a2c', mid: '#2c4a70', lit: '#6f93c0', accent: '#d5e4f4' },
+  professional: { deep: '#091530', mid: '#1f3f80', lit: '#5578cc', accent: '#cfdcf8' },
+  other: { deep: '#161d2e', mid: '#41506b', lit: '#8b9bb4', accent: '#dee6f0' },
+
+  /** Home banner: the sun going down over Lake Erie. */
+  hero: { deep: '#071230', mid: '#1b4a90', lit: '#e8a92e', accent: '#fff2cc', sun: '#ffd24a' },
 };
 
 /* ------------------------------------------------------------------ motifs */
@@ -99,7 +125,22 @@ function rings(p, w, h) {
 
 /** Flowing horizontal curves — water, and anything that should feel calm. */
 function waves(p, w, h) {
-  let out = `<circle cx="${w * 0.74}" cy="${h * 0.34}" r="${h * 0.13}" fill="${p.accent}" opacity="0.92"/>`;
+  // A near-white disc goes grey the moment the page lays a scrim over it, so the
+  // core is a saturated yellow and the bloom is a real radial gradient — stacked
+  // discs left visible rings that read as a target rather than a light.
+  const core = p.sun ?? p.accent;
+  const cx = w * 0.74;
+  const cy = h * 0.34;
+  let out = `<defs>
+      <radialGradient id="bloom" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${core}" stop-opacity="0.62"/>
+        <stop offset="38%" stop-color="${core}" stop-opacity="0.24"/>
+        <stop offset="72%" stop-color="${core}" stop-opacity="0.07"/>
+        <stop offset="100%" stop-color="${core}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${h * 0.42}" fill="url(#bloom)"/>
+    <circle cx="${cx}" cy="${cy}" r="${h * 0.115}" fill="${core}"/>`;
   for (let i = 0; i < 7; i += 1) {
     const y = h * 0.56 + i * (h * 0.075);
     out += `<path d="M${-w * 0.05} ${y} Q ${w * 0.28} ${y - h * 0.05} ${w * 0.55} ${y}
@@ -207,6 +248,8 @@ function svg(key, variant, w, h) {
     mid: shift(source.mid, tone),
     lit: shift(source.lit, tone),
     accent: source.accent,
+    // Carried through unshifted: the sun's colour is the point, not a variant.
+    sun: source.sun,
   };
   // The category's own motif leads; the other two are pulled from the pool so
   // no two cards in the same list look like the same photograph.
@@ -226,10 +269,11 @@ function svg(key, variant, w, h) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0.2" y2="1">
-      <stop offset="0%" stop-color="${p.lit}"/>
+    <linearGradient id="sky" x1="${isBanner ? 0 : 0}" y1="${isBanner ? 1 : 0}"
+      x2="${isBanner ? 1 : 0.2}" y2="${isBanner ? 0 : 1}">
+      <stop offset="0%" stop-color="${isBanner ? p.deep : p.lit}"/>
       <stop offset="46%" stop-color="${p.mid}"/>
-      <stop offset="100%" stop-color="${p.deep}"/>
+      <stop offset="100%" stop-color="${isBanner ? p.lit : p.deep}"/>
     </linearGradient>
     <radialGradient id="glow" cx="72%" cy="${34 + lift * 100}%" r="62%">
       <stop offset="0%" stop-color="${p.accent}" stop-opacity="0.55"/>

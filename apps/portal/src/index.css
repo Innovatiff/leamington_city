@@ -5,9 +5,11 @@
  * targets, one column, and no iconography without a label beside it.
  */
 @theme {
-  --color-brand-500: oklch(0.62 0.19 25);
-  --color-brand-600: oklch(0.55 0.19 25);
-  --color-brand-700: oklch(0.47 0.16 25);
+  /* Leamington blue, matching the public site. */
+  --color-brand-50: oklch(0.972 0.014 252);
+  --color-brand-500: oklch(0.567 0.182 256);
+  --color-brand-600: oklch(0.487 0.176 257);
+  --color-brand-700: oklch(0.408 0.148 258);
 }
 
 @layer base {
